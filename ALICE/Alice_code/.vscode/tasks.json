@@ -1,0 +1,25 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Test OCR Integration",
+			"type": "shell",
+			"command": "\"D:/ALICE(NEW)/Alice-main07/Alice_code/venv_new/Scripts/python.exe\"",
+			"args": [
+				"test_alice_ocr_integration.py"
+			],
+			"isBackground": false,
+			"group": "test"
+		},
+		{
+			"label": "Test OCR Debug",
+			"type": "shell",
+			"command": "\"D:/ALICE(NEW)/Alice-main07/Alice_code/venv_new/Scripts/python.exe\"",
+			"args": [
+				"test_ocr_debug.py"
+			],
+			"isBackground": false,
+			"group": "test"
+		}
+	]
+}

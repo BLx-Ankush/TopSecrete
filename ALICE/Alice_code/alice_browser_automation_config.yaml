@@ -1,0 +1,149 @@
+# Alice Browser Automation Configuration
+# This file configures the browser automation system for Alice voice agent
+
+# Browser Configuration
+browser:
+  # Run browser in headless mode by default (no visible window)
+  headless_default: true
+  
+  # Maximum number of concurrent browser sessions
+  # Recommended: 3 for 8GB RAM, increase for more RAM
+  max_concurrent_sessions: 3
+  
+  # Idle timeout in seconds before closing inactive sessions
+  # Sessions idle longer than this will be automatically closed
+  idle_timeout_seconds: 300
+  
+  # Directory for storing browser profiles
+  # Profiles maintain login sessions and preferences
+  profiles_dir: "~/.alice/browser_profiles"
+  
+  # Default profile to use when none specified
+  default_profile: "default"
+
+# Qwen Model Configuration
+qwen:
+  # Ollama server host URL
+  # Default: local Ollama instance
+  host: "http://localhost:11434"
+  
+  # Qwen model name
+  # Recommended: qwen2.5-coder:3b for browser automation
+  model: "qwen2.5-coder:3b"
+  
+  # Timeout for model inference in seconds
+  timeout_seconds: 30
+  
+  # Maximum retries for failed model requests
+  max_retries: 3
+
+# DOM Parser Configuration
+dom_parser:
+  # Cache duration for parsed DOM in seconds
+  # Avoids re-parsing on rapid consecutive actions
+  cache_duration_seconds: 2.0
+  
+  # Maximum number of elements to extract from DOM
+  # Prevents overwhelming the model with too many elements
+  max_elements: 1000
+  
+  # Filter out decorative elements (images without alt, spacers, etc.)
+  filter_decorative: true
+
+# Performance Configuration
+performance:
+  # Timeout for DOM parsing in seconds
+  # Target: < 2 seconds per requirement 12.2
+  dom_parse_timeout: 2.0
+  
+  # Timeout for action generation by Qwen in seconds
+  # Target: < 5 seconds per requirement 12.3
+  action_generation_timeout: 5.0
+  
+  # Timeout for simple actions (click, type) in seconds
+  # Target: < 1 second per requirement 12.4
+  simple_action_timeout: 1.0
+
+# Security Configuration
+security:
+  # Require voice confirmation before payment actions
+  require_payment_confirmation: true
+  
+  # Block automation on banking websites without explicit permission
+  # Set to true for extra safety
+  block_banking_sites: false
+  
+  # Validate SSL certificates for all HTTPS connections
+  validate_ssl: true
+  
+  # Clear sensitive data from memory after task completion
+  clear_sensitive_data: true
+
+# Logging Configuration
+logging:
+  # Log level: DEBUG, INFO, WARNING, ERROR, CRITICAL
+  level: "INFO"
+  
+  # Log file path
+  log_file: "~/.alice/logs/browser_automation.log"
+  
+  # SECURITY: Never log sensitive data (passwords, credit cards, OTPs)
+  # Keep this false for production
+  log_sensitive_data: false
+
+# Application Configurations
+# Pre-configured settings for common web applications
+applications:
+  gmail:
+    url: "https://mail.google.com"
+    login_url: "https://accounts.google.com"
+    profile: "personal"
+  
+  # Add more application configurations as needed
+  # github:
+  #   url: "https://github.com"
+  #   login_url: "https://github.com/login"
+  #   profile: "work"
+
+# Retry Configuration
+retry:
+  # Maximum retries for general operations
+  max_retries: 2
+  
+  # Initial retry delay in seconds
+  retry_delay_seconds: 1.0
+  
+  # Use exponential backoff for retries
+  exponential_backoff: true
+  
+  # Backoff multiplier for exponential backoff
+  backoff_multiplier: 2.0
+  
+  # Error-specific retry limits
+  element_not_found_retries: 3
+  page_load_retries: 2
+  invalid_action_retries: 3
+  network_error_retries: 2
+
+# Feature Flags
+features:
+  # Enable OTP verification via voice
+  enable_otp_verification: true
+  
+  # Enable problem solving action suite
+  enable_problem_solving: true
+  
+  # Enable web bookings action suite
+  enable_web_bookings: true
+  
+  # Enable application access action suite
+  enable_app_access: true
+  
+  # Enable session persistence across restarts
+  enable_session_persistence: true
+  
+  # Enable progress updates during long tasks
+  enable_progress_updates: true
+  
+  # Progress update interval in seconds
+  progress_update_interval: 10

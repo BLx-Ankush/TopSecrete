@@ -1,0 +1,1014 @@
+{
+  "timestamp": 1766842057,
+  "windows": [],
+  "active_window_elements": [
+    {
+      "name": "alice_trigger.py - Alice-main07 - Visual Studio Code",
+      "type": "Dialog",
+      "coordinates": [
+        683,
+        360
+      ],
+      "bounds": [
+        -8,
+        -8,
+        1374,
+        728
+      ],
+      "is_clickable": false,
+      "window": "alice_trigger.py - Alice-main07 - Visual Studio Code"
+    },
+    {
+      "name": "alice_trigger.py - Alice-main07 - Visual Studio Code",
+      "type": "Pane",
+      "coordinates": [
+        683,
+        360
+      ],
+      "bounds": [
+        0,
+        0,
+        1366,
+        720
+      ],
+      "is_clickable": false,
+      "window": "alice_trigger.py - Alice-main07 - Visual Studio Code"
+    },
+    {
+      "name": "Minimize",
+      "type": "Button",
+      "coordinates": [
+        1251,
+        17
+      ],
+      "bounds": [
+        1229,
+        0,
+        1274,
+        34
+      ],
+      "is_clickable": true,
+      "window": "alice_trigger.py - Alice-main07 - Visual Studio Code"
+    },
+    {
+      "name": "Restore",
+      "type": "Button",
+      "coordinates": [
+        1297,
+        17
+      ],
+      "bounds": [
+        1274,
+        0,
+        1320,
+        34
+      ],
+      "is_clickable": true,
+      "window": "alice_trigger.py - Alice-main07 - Visual Studio Code"
+    },
+    {
+      "name": "Close",
+      "type": "Button",
+      "coordinates": [
+        1343,
+        17
+      ],
+      "bounds": [
+        1320,
+        0,
+        1366,
+        34
+      ],
+      "is_clickable": true,
+      "window": "alice_trigger.py - Alice-main07 - Visual Studio Code"
+    },
+    {
+      "name": "alice_trigger.py - Alice-main07 - Visual Studio Code",
+      "type": "Document",
+      "coordinates": [
+        683,
+        360
+      ],
+      "bounds": [
+        0,
+        0,
+        1366,
+        720
+      ],
+      "is_clickable": false,
+      "window": "alice_trigger.py - Alice-main07 - Visual Studio Code"
+    },
+    {
+      "name": "Unnamed Menu",
+      "type": "Menu",
+      "coordinates": [
+        198,
+        17
+      ],
+      "bounds": [
+        35,
+        0,
+        361,
+        34
+      ],
+      "is_clickable": true,
+      "window": "alice_trigger.py - Alice-main07 - Visual Studio Code"
+    },
+    {
+      "name": "File",
+      "type": "MenuItem",
+      "coordinates": [
+        53,
+        17
+      ],
+      "bounds": [
+        35,
+        0,
+        71,
+        34
+      ],
+      "is_clickable": true,
+      "window": "alice_trigger.py - Alice-main07 - Visual Studio Code"
+    },
+    {
+      "name": "Edit",
+      "type": "MenuItem",
+      "coordinates": [
+        89,
+        17
+      ],
+      "bounds": [
+        70,
+        0,
+        109,
+        34
+      ],
+      "is_clickable": true,
+      "window": "alice_trigger.py - Alice-main07 - Visual Studio Code"
+    },
+    {
+      "name": "Selection",
+      "type": "MenuItem",
+      "coordinates": [
+        142,
+        17
+      ],
+      "bounds": [
+        108,
+        0,
+        177,
+        34
+      ],
+      "is_clickable": true,
+      "window": "alice_trigger.py - Alice-main07 - Visual Studio Code"
+    },
+    {
+      "name": "View",
+      "type": "MenuItem",
+      "coordinates": [
+        198,
+        17
+      ],
+      "bounds": [
+        176,
+        0,
+        220,
+        34
+      ],
+      "is_clickable": true,
+      "window": "alice_trigger.py - Alice-main07 - Visual Studio Code"
+    },
+    {
+      "name": "Go",
+      "type": "MenuItem",
+      "coordinates": [
+        236,
+        17
+      ],
+      "bounds": [
+        219,
+        0,
+        253,
+        34
+      ],
+      "is_clickable": true,
+      "window": "alice_trigger.py - Alice-main07 - Visual Studio Code"
+    },
+    {
+      "name": "Run",
+      "type": "MenuItem",
+      "coordinates": [
+        271,
+        17
+      ],
+      "bounds": [
+        252,
+        0,
+        291,
+        34
+      ],
+      "is_clickable": true,
+      "window": "alice_trigger.py - Alice-main07 - Visual Studio Code"
+    },
+    {
+      "name": "More",
+      "type": "MenuItem",
+      "coordinates": [
+        309,
+        17
+      ],
+      "bounds": [
+        290,
+        0,
+        329,
+        34
+      ],
+      "is_clickable": true,
+      "window": "alice_trigger.py - Alice-main07 - Visual Studio Code"
+    },
+    {
+      "name": "Go Back (Alt+LeftArrow)",
+      "type": "Button",
+      "coordinates": [
+        381,
+        17
+      ],
+      "bounds": [
+        370,
+        6,
+        393,
+        28
+      ],
+      "is_clickable": true,
+      "window": "alice_trigger.py - Alice-main07 - Visual Studio Code"
+    },
+    {
+      "name": "Go Forward (Alt+RightArrow)",
+      "type": "Button",
+      "coordinates": [
+        407,
+        17
+      ],
+      "bounds": [
+        396,
+        6,
+        419,
+        28
+      ],
+      "is_clickable": true,
+      "window": "alice_trigger.py - Alice-main07 - Visual Studio Code"
+    },
+    {
+      "name": "Alice-main07",
+      "type": "Button",
+      "coordinates": [
+        689,
+        17
+      ],
+      "bounds": [
+        643,
+        6,
+        736,
+        28
+      ],
+      "is_clickable": true,
+      "window": "alice_trigger.py - Alice-main07 - Visual Studio Code"
+    },
+    {
+      "name": "Toggle Chat",
+      "type": "Button",
+      "coordinates": [
+        971,
+        17
+      ],
+      "bounds": [
+        960,
+        6,
+        983,
+        28
+      ],
+      "is_clickable": true,
+      "window": "alice_trigger.py - Alice-main07 - Visual Studio Code"
+    },
+    {
+      "name": "Toggle Chat",
+      "type": "Button",
+      "coordinates": [
+        971,
+        17
+      ],
+      "bounds": [
+        960,
+        6,
+        983,
+        28
+      ],
+      "is_clickable": true,
+      "window": "alice_trigger.py - Alice-main07 - Visual Studio Code"
+    },
+    {
+      "name": "More...",
+      "type": "Button",
+      "coordinates": [
+        987,
+        17
+      ],
+      "bounds": [
+        979,
+        6,
+        996,
+        28
+      ],
+      "is_clickable": true,
+      "window": "alice_trigger.py - Alice-main07 - Visual Studio Code"
+    },
+    {
+      "name": "Title actions",
+      "type": "Toolbar",
+      "coordinates": [
+        1174,
+        17
+      ],
+      "bounds": [
+        1124,
+        0,
+        1225,
+        34
+      ],
+      "is_clickable": false,
+      "window": "alice_trigger.py - Alice-main07 - Visual Studio Code"
+    },
+    {
+      "name": "Customize Layout...",
+      "type": "Button",
+      "coordinates": [
+        1135,
+        17
+      ],
+      "bounds": [
+        1124,
+        6,
+        1147,
+        28
+      ],
+      "is_clickable": true,
+      "window": "alice_trigger.py - Alice-main07 - Visual Studio Code"
+    },
+    {
+      "name": "Toggle Primary Side Bar (Ctrl+B)",
+      "type": "CheckBox",
+      "coordinates": [
+        1161,
+        17
+      ],
+      "bounds": [
+        1150,
+        6,
+        1173,
+        28
+      ],
+      "is_clickable": true,
+      "window": "alice_trigger.py - Alice-main07 - Visual Studio Code"
+    },
+    {
+      "name": "Toggle Panel (Ctrl+J)",
+      "type": "CheckBox",
+      "coordinates": [
+        1187,
+        17
+      ],
+      "bounds": [
+        1176,
+        6,
+        1199,
+        28
+      ],
+      "is_clickable": true,
+      "window": "alice_trigger.py - Alice-main07 - Visual Studio Code"
+    },
+    {
+      "name": "Toggle Secondary Side Bar (Ctrl+Alt+B)",
+      "type": "CheckBox",
+      "coordinates": [
+        1213,
+        17
+      ],
+      "bounds": [
+        1202,
+        6,
+        1225,
+        28
+      ],
+      "is_clickable": true,
+      "window": "alice_trigger.py - Alice-main07 - Visual Studio Code"
+    },
+    {
+      "name": "Active View Switcher",
+      "type": "TabControl",
+      "coordinates": [
+        24,
+        275
+      ],
+      "bounds": [
+        0,
+        35,
+        48,
+        515
+      ],
+      "is_clickable": true,
+      "window": "alice_trigger.py - Alice-main07 - Visual Studio Code"
+    },
+    {
+      "name": "Explorer (Ctrl+Shift+E)",
+      "type": "TabItem",
+      "coordinates": [
+        24,
+        59
+      ],
+      "bounds": [
+        0,
+        35,
+        48,
+        83
+      ],
+      "is_clickable": true,
+      "window": "alice_trigger.py - Alice-main07 - Visual Studio Code"
+    },
+    {
+      "name": "Explorer (Ctrl+Shift+E)",
+      "type": "GroupBox",
+      "coordinates": [
+        24,
+        59
+      ],
+      "bounds": [
+        0,
+        35,
+        48,
+        83
+      ],
+      "is_clickable": false,
+      "window": "alice_trigger.py - Alice-main07 - Visual Studio Code"
+    },
+    {
+      "name": "Search (Ctrl+Shift+F)",
+      "type": "TabItem",
+      "coordinates": [
+        24,
+        107
+      ],
+      "bounds": [
+        0,
+        83,
+        48,
+        131
+      ],
+      "is_clickable": true,
+      "window": "alice_trigger.py - Alice-main07 - Visual Studio Code"
+    },
+    {
+      "name": "Search (Ctrl+Shift+F)",
+      "type": "GroupBox",
+      "coordinates": [
+        24,
+        107
+      ],
+      "bounds": [
+        0,
+        83,
+        48,
+        131
+      ],
+      "is_clickable": false,
+      "window": "alice_trigger.py - Alice-main07 - Visual Studio Code"
+    },
+    {
+      "name": "Source Control (Ctrl+Shift+G)",
+      "type": "TabItem",
+      "coordinates": [
+        24,
+        155
+      ],
+      "bounds": [
+        0,
+        131,
+        48,
+        179
+      ],
+      "is_clickable": true,
+      "window": "alice_trigger.py - Alice-main07 - Visual Studio Code"
+    },
+    {
+      "name": "Source Control (Ctrl+Shift+G)",
+      "type": "GroupBox",
+      "coordinates": [
+        24,
+        155
+      ],
+      "bounds": [
+        0,
+        131,
+        48,
+        179
+      ],
+      "is_clickable": false,
+      "window": "alice_trigger.py - Alice-main07 - Visual Studio Code"
+    },
+    {
+      "name": "Run and Debug (Ctrl+Shift+D)",
+      "type": "TabItem",
+      "coordinates": [
+        24,
+        203
+      ],
+      "bounds": [
+        0,
+        179,
+        48,
+        227
+      ],
+      "is_clickable": true,
+      "window": "alice_trigger.py - Alice-main07 - Visual Studio Code"
+    },
+    {
+      "name": "Run and Debug (Ctrl+Shift+D)",
+      "type": "GroupBox",
+      "coordinates": [
+        24,
+        203
+      ],
+      "bounds": [
+        0,
+        179,
+        48,
+        227
+      ],
+      "is_clickable": false,
+      "window": "alice_trigger.py - Alice-main07 - Visual Studio Code"
+    },
+    {
+      "name": "Remote Explorer",
+      "type": "TabItem",
+      "coordinates": [
+        24,
+        251
+      ],
+      "bounds": [
+        0,
+        227,
+        48,
+        275
+      ],
+      "is_clickable": true,
+      "window": "alice_trigger.py - Alice-main07 - Visual Studio Code"
+    },
+    {
+      "name": "Remote Explorer",
+      "type": "GroupBox",
+      "coordinates": [
+        24,
+        251
+      ],
+      "bounds": [
+        0,
+        227,
+        48,
+        275
+      ],
+      "is_clickable": false,
+      "window": "alice_trigger.py - Alice-main07 - Visual Studio Code"
+    },
+    {
+      "name": "Extensions (Ctrl+Shift+X) - Deprecated extensions detected. Review them and migrate to alternatives.",
+      "type": "TabItem",
+      "coordinates": [
+        24,
+        299
+      ],
+      "bounds": [
+        0,
+        275,
+        48,
+        323
+      ],
+      "is_clickable": true,
+      "window": "alice_trigger.py - Alice-main07 - Visual Studio Code"
+    },
+    {
+      "name": "Extensions (Ctrl+Shift+X) - Deprecated extensions detected. Review them and migrate to alternatives.",
+      "type": "GroupBox",
+      "coordinates": [
+        24,
+        299
+      ],
+      "bounds": [
+        0,
+        275,
+        48,
+        323
+      ],
+      "is_clickable": false,
+      "window": "alice_trigger.py - Alice-main07 - Visual Studio Code"
+    },
+    {
+      "name": "Extensions (Ctrl+Shift+X) - Deprecated extensions detected. Review them and migrate to alternatives.",
+      "type": "GroupBox",
+      "coordinates": [
+        24,
+        299
+      ],
+      "bounds": [
+        0,
+        275,
+        48,
+        323
+      ],
+      "is_clickable": false,
+      "window": "alice_trigger.py - Alice-main07 - Visual Studio Code"
+    },
+    {
+      "name": "Testing",
+      "type": "TabItem",
+      "coordinates": [
+        24,
+        347
+      ],
+      "bounds": [
+        0,
+        323,
+        48,
+        371
+      ],
+      "is_clickable": true,
+      "window": "alice_trigger.py - Alice-main07 - Visual Studio Code"
+    },
+    {
+      "name": "Testing",
+      "type": "GroupBox",
+      "coordinates": [
+        24,
+        347
+      ],
+      "bounds": [
+        0,
+        323,
+        48,
+        371
+      ],
+      "is_clickable": false,
+      "window": "alice_trigger.py - Alice-main07 - Visual Studio Code"
+    },
+    {
+      "name": "vscode-openai",
+      "type": "TabItem",
+      "coordinates": [
+        24,
+        395
+      ],
+      "bounds": [
+        0,
+        371,
+        48,
+        419
+      ],
+      "is_clickable": true,
+      "window": "alice_trigger.py - Alice-main07 - Visual Studio Code"
+    },
+    {
+      "name": "vscode-openai",
+      "type": "GroupBox",
+      "coordinates": [
+        24,
+        395
+      ],
+      "bounds": [
+        0,
+        371,
+        48,
+        419
+      ],
+      "is_clickable": false,
+      "window": "alice_trigger.py - Alice-main07 - Visual Studio Code"
+    },
+    {
+      "name": "Gemini Code Assist (Alt+G)",
+      "type": "TabItem",
+      "coordinates": [
+        24,
+        443
+      ],
+      "bounds": [
+        0,
+        419,
+        48,
+        467
+      ],
+      "is_clickable": true,
+      "window": "alice_trigger.py - Alice-main07 - Visual Studio Code"
+    },
+    {
+      "name": "Gemini Code Assist (Alt+G)",
+      "type": "GroupBox",
+      "coordinates": [
+        24,
+        443
+      ],
+      "bounds": [
+        0,
+        419,
+        48,
+        467
+      ],
+      "is_clickable": false,
+      "window": "alice_trigger.py - Alice-main07 - Visual Studio Code"
+    },
+    {
+      "name": "Additional Views",
+      "type": "Button",
+      "coordinates": [
+        24,
+        491
+      ],
+      "bounds": [
+        0,
+        467,
+        48,
+        515
+      ],
+      "is_clickable": true,
+      "window": "alice_trigger.py - Alice-main07 - Visual Studio Code"
+    },
+    {
+      "name": "Additional Views",
+      "type": "GroupBox",
+      "coordinates": [
+        24,
+        491
+      ],
+      "bounds": [
+        0,
+        467,
+        48,
+        515
+      ],
+      "is_clickable": false,
+      "window": "alice_trigger.py - Alice-main07 - Visual Studio Code"
+    },
+    {
+      "name": "\uea7c",
+      "type": "Static",
+      "coordinates": [
+        24,
+        491
+      ],
+      "bounds": [
+        12,
+        479,
+        36,
+        503
+      ],
+      "is_clickable": false,
+      "window": "alice_trigger.py - Alice-main07 - Visual Studio Code"
+    },
+    {
+      "name": "Manage",
+      "type": "Toolbar",
+      "coordinates": [
+        24,
+        650
+      ],
+      "bounds": [
+        0,
+        602,
+        48,
+        698
+      ],
+      "is_clickable": false,
+      "window": "alice_trigger.py - Alice-main07 - Visual Studio Code"
+    },
+    {
+      "name": "Accounts",
+      "type": "Button",
+      "coordinates": [
+        24,
+        626
+      ],
+      "bounds": [
+        0,
+        602,
+        48,
+        650
+      ],
+      "is_clickable": true,
+      "window": "alice_trigger.py - Alice-main07 - Visual Studio Code"
+    },
+    {
+      "name": "Manage",
+      "type": "Button",
+      "coordinates": [
+        24,
+        674
+      ],
+      "bounds": [
+        0,
+        650,
+        48,
+        698
+      ],
+      "is_clickable": true,
+      "window": "alice_trigger.py - Alice-main07 - Visual Studio Code"
+    },
+    {
+      "name": "EXPLORER",
+      "type": "Static",
+      "coordinates": [
+        93,
+        52
+      ],
+      "bounds": [
+        68,
+        35,
+        119,
+        70
+      ],
+      "is_clickable": false,
+      "window": "alice_trigger.py - Alice-main07 - Visual Studio Code"
+    },
+    {
+      "name": "Explorer actions",
+      "type": "Toolbar",
+      "coordinates": [
+        233,
+        52
+      ],
+      "bounds": [
+        126,
+        35,
+        340,
+        70
+      ],
+      "is_clickable": false,
+      "window": "alice_trigger.py - Alice-main07 - Visual Studio Code"
+    },
+    {
+      "name": "Explorer Section: Alice-main07",
+      "type": "Button",
+      "coordinates": [
+        198,
+        81
+      ],
+      "bounds": [
+        48,
+        70,
+        348,
+        92
+      ],
+      "is_clickable": true,
+      "window": "alice_trigger.py - Alice-main07 - Visual Studio Code"
+    },
+    {
+      "name": "Files Explorer",
+      "type": "TreeView",
+      "coordinates": [
+        198,
+        373
+      ],
+      "bounds": [
+        48,
+        92,
+        348,
+        654
+      ],
+      "is_clickable": false,
+      "window": "alice_trigger.py - Alice-main07 - Visual Studio Code"
+    },
+    {
+      "name": "Outline Section",
+      "type": "Button",
+      "coordinates": [
+        198,
+        665
+      ],
+      "bounds": [
+        48,
+        654,
+        348,
+        676
+      ],
+      "is_clickable": true,
+      "window": "alice_trigger.py - Alice-main07 - Visual Studio Code"
+    },
+    {
+      "name": "Timeline Section",
+      "type": "Button",
+      "coordinates": [
+        198,
+        687
+      ],
+      "bounds": [
+        48,
+        676,
+        348,
+        698
+      ],
+      "is_clickable": true,
+      "window": "alice_trigger.py - Alice-main07 - Visual Studio Code"
+    },
+    {
+      "name": "Active View Switcher",
+      "type": "TabControl",
+      "coordinates": [
+        559,
+        501
+      ],
+      "bounds": [
+        356,
+        484,
+        763,
+        518
+      ],
+      "is_clickable": true,
+      "window": "alice_trigger.py - Alice-main07 - Visual Studio Code"
+    },
+    {
+      "name": "Terminal actions",
+      "type": "Toolbar",
+      "coordinates": [
+        898,
+        501
+      ],
+      "bounds": [
+        770,
+        484,
+        1027,
+        519
+      ],
+      "is_clickable": false,
+      "window": "alice_trigger.py - Alice-main07 - Visual Studio Code"
+    },
+    {
+      "name": "Terminal tabs",
+      "type": "ListBox",
+      "coordinates": [
+        1043,
+        608
+      ],
+      "bounds": [
+        1021,
+        518,
+        1066,
+        698
+      ],
+      "is_clickable": false,
+      "window": "alice_trigger.py - Alice-main07 - Visual Studio Code"
+    },
+    {
+      "name": "Active View Switcher",
+      "type": "TabControl",
+      "coordinates": [
+        1099,
+        52
+      ],
+      "bounds": [
+        1074,
+        35,
+        1125,
+        70
+      ],
+      "is_clickable": true,
+      "window": "alice_trigger.py - Alice-main07 - Visual Studio Code"
+    },
+    {
+      "name": "Chat actions",
+      "type": "Toolbar",
+      "coordinates": [
+        1254,
+        52
+      ],
+      "bounds": [
+        1202,
+        35,
+        1306,
+        70
+      ],
+      "is_clickable": false,
+      "window": "alice_trigger.py - Alice-main07 - Visual Studio Code"
+    },
+    {
+      "name": "Chat",
+      "type": "ListBox",
+      "coordinates": [
+        1216,
+        330
+      ],
+      "bounds": [
+        1066,
+        109,
+        1366,
+        551
+      ],
+      "is_clickable": false,
+      "window": "alice_trigger.py - Alice-main07 - Visual Studio Code"
+    }
+  ]
+}

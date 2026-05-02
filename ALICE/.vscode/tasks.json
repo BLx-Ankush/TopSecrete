@@ -1,0 +1,44 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "prepare-and-push-alice-main-clean",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-ExecutionPolicy",
+				"Bypass",
+				"-Command",
+				"$ErrorActionPreference='Stop'; $src='d:\\ALICE(NEW)\\Alice-main07'; $dst='d:\\ALICE(NEW)\\Alice-main-clean-publish'; if (Test-Path $dst) { Remove-Item -Recurse -Force $dst }; git clone https://github.com/BLx-Ankush/Alice-Main.git $dst; Get-ChildItem -Force $dst | Where-Object { $_.Name -ne '.git' } | Remove-Item -Recurse -Force; $rootFiles=@('README.md','alice_trigger.py','start_alice.bat'); foreach($f in $rootFiles){ $p=Join-Path $src $f; if(Test-Path $p){ Copy-Item $p -Destination (Join-Path $dst $f) -Force }}; $rootDirs=@('Alice_code','agent-starter-react'); foreach($d in $rootDirs){ $sp=Join-Path $src $d; if(Test-Path $sp){ Copy-Item $sp -Destination (Join-Path $dst $d) -Recurse -Force }}; $removeDirs=@('tests','__pycache__','.pytest_cache','venv_new','temp_alice_files','.next','dist','build'); foreach($rd in $removeDirs){ Get-ChildItem -Path $dst -Recurse -Force -Directory -Filter $rd | ForEach-Object { Remove-Item -Recurse -Force $_.FullName } }; $removePatterns=@('test*.py','*test*.py','pytest.ini','*RESULTS*.md','*SUMMARY*.md','*automation_test*.txt','control_log.txt','ALICE_Submission.zip'); foreach($pat in $removePatterns){ Get-ChildItem -Path $dst -Recurse -Force -File -Filter $pat | ForEach-Object { Remove-Item -Force $_.FullName } }; $now=Get-Date; Get-ChildItem -Path $dst -Recurse -Force | ForEach-Object { $_.LastWriteTime=$now; $_.CreationTime=$now; $_.LastAccessTime=$now }; git -C $dst add .; git -C $dst commit -m 'Initial ALICE main code import (no tests/results; timestamps normalized)'; $branch=(git -C $dst rev-parse --abbrev-ref HEAD).Trim(); if([string]::IsNullOrWhiteSpace($branch)){ $branch='main' }; git -C $dst push -u origin $branch; Write-Host 'DONE: pushed to repo from' $dst"
+			],
+			"isBackground": true
+		},
+		{
+			"label": "prepare-and-push-alice-main-clean-foreground",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-ExecutionPolicy",
+				"Bypass",
+				"-Command",
+				"$ErrorActionPreference='Stop'; $src='d:\\ALICE(NEW)\\Alice-main07'; $dst='d:\\ALICE(NEW)\\Alice-main-clean-publish'; if (Test-Path $dst) { Remove-Item -Recurse -Force $dst }; git clone https://github.com/BLx-Ankush/Alice-Main.git $dst; Get-ChildItem -Force $dst | Where-Object { $_.Name -ne '.git' } | Remove-Item -Recurse -Force; $rootFiles=@('README.md','alice_trigger.py','start_alice.bat'); foreach($f in $rootFiles){ $p=Join-Path $src $f; if(Test-Path $p){ Copy-Item $p -Destination (Join-Path $dst $f) -Force }}; $rootDirs=@('Alice_code','agent-starter-react'); foreach($d in $rootDirs){ $sp=Join-Path $src $d; if(Test-Path $sp){ Copy-Item $sp -Destination (Join-Path $dst $d) -Recurse -Force }}; $removeDirs=@('tests','__pycache__','.pytest_cache','venv_new','temp_alice_files','.next','dist','build'); foreach($rd in $removeDirs){ Get-ChildItem -Path $dst -Recurse -Force -Directory -Filter $rd | ForEach-Object { Remove-Item -Recurse -Force $_.FullName } }; $removePatterns=@('test*.py','*test*.py','pytest.ini','*RESULTS*.md','*SUMMARY*.md','*automation_test*.txt','control_log.txt','ALICE_Submission.zip'); foreach($pat in $removePatterns){ Get-ChildItem -Path $dst -Recurse -Force -File -Filter $pat | ForEach-Object { Remove-Item -Force $_.FullName } }; $now=Get-Date; Get-ChildItem -Path $dst -Recurse -Force | ForEach-Object { $_.LastWriteTime=$now; $_.CreationTime=$now; $_.LastAccessTime=$now }; git -C $dst add .; git -C $dst commit -m 'Initial ALICE main code import (no tests/results; timestamps normalized)'; $branch=(git -C $dst rev-parse --abbrev-ref HEAD).Trim(); if([string]::IsNullOrWhiteSpace($branch)){ $branch='main' }; git -C $dst push -u origin $branch; Write-Host 'DONE: pushed to repo from' $dst"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "direct-publish-now",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-ExecutionPolicy",
+				"Bypass",
+				"-Command",
+				"$ErrorActionPreference='Stop'; $src='d:\\ALICE(NEW)\\Alice-main07'; $dst='d:\\ALICE(NEW)\\Alice-main-clean-publish'; if (Test-Path $dst) { Remove-Item -Recurse -Force $dst }; git clone https://github.com/BLx-Ankush/Alice-Main.git $dst; Get-ChildItem -Force $dst | Where-Object { $_.Name -ne '.git' } | Remove-Item -Recurse -Force; $rootFiles=@('README.md','alice_trigger.py','start_alice.bat'); foreach($f in $rootFiles){ $p=Join-Path $src $f; if(Test-Path $p){ Copy-Item $p -Destination (Join-Path $dst $f) -Force }}; $rootDirs=@('Alice_code','agent-starter-react'); foreach($d in $rootDirs){ $sp=Join-Path $src $d; if(Test-Path $sp){ Copy-Item $sp -Destination (Join-Path $dst $d) -Recurse -Force }}; $removeDirs=@('tests','__pycache__','.pytest_cache','venv_new','temp_alice_files','.next','dist','build'); foreach($rd in $removeDirs){ Get-ChildItem -Path $dst -Recurse -Force -Directory -Filter $rd | ForEach-Object { Remove-Item -Recurse -Force $_.FullName } }; $removePatterns=@('test*.py','*test*.py','pytest.ini','*RESULTS*.md','*SUMMARY*.md','*automation_test*.txt','control_log.txt','ALICE_Submission.zip'); foreach($pat in $removePatterns){ Get-ChildItem -Path $dst -Recurse -Force -File -Filter $pat | ForEach-Object { Remove-Item -Force $_.FullName } }; $now=Get-Date; Get-ChildItem -Path $dst -Recurse -Force | ForEach-Object { $_.LastWriteTime=$now; $_.CreationTime=$now; $_.LastAccessTime=$now }; git -C $dst add .; git -C $dst commit -m 'Initial ALICE main code import (no tests/results; timestamps normalized)'; $branch=(git -C $dst rev-parse --abbrev-ref HEAD).Trim(); if([string]::IsNullOrWhiteSpace($branch)){ $branch='main' }; git -C $dst push -u origin $branch; Write-Host 'DONE: pushed to repo from' $dst"
+			],
+			"isBackground": false
+		}
+	]
+}

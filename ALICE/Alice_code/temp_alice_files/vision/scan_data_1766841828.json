@@ -1,0 +1,86 @@
+{
+  "timestamp": 1766841828,
+  "windows": [],
+  "active_window_elements": [
+    {
+      "name": "alice_trigger.py - Alice-main07 - Visual Studio Code",
+      "type": "Dialog",
+      "coordinates": [
+        683,
+        360
+      ],
+      "bounds": [
+        -8,
+        -8,
+        1374,
+        728
+      ],
+      "is_clickable": false,
+      "window": "alice_trigger.py - Alice-main07 - Visual Studio Code"
+    },
+    {
+      "name": "alice_trigger.py - Alice-main07 - Visual Studio Code",
+      "type": "Pane",
+      "coordinates": [
+        683,
+        360
+      ],
+      "bounds": [
+        0,
+        0,
+        1366,
+        720
+      ],
+      "is_clickable": false,
+      "window": "alice_trigger.py - Alice-main07 - Visual Studio Code"
+    },
+    {
+      "name": "Minimize",
+      "type": "Button",
+      "coordinates": [
+        1251,
+        17
+      ],
+      "bounds": [
+        1229,
+        0,
+        1274,
+        34
+      ],
+      "is_clickable": true,
+      "window": "alice_trigger.py - Alice-main07 - Visual Studio Code"
+    },
+    {
+      "name": "Restore",
+      "type": "Button",
+      "coordinates": [
+        1297,
+        17
+      ],
+      "bounds": [
+        1274,
+        0,
+        1320,
+        34
+      ],
+      "is_clickable": true,
+      "window": "alice_trigger.py - Alice-main07 - Visual Studio Code"
+    },
+    {
+      "name": "Close",
+      "type": "Button",
+      "coordinates": [
+        1343,
+        17
+      ],
+      "bounds": [
+        1320,
+        0,
+        1366,
+        34
+      ],
+      "is_clickable": true,
+      "window": "alice_trigger.py - Alice-main07 - Visual Studio Code"
+    }
+  ]
+}

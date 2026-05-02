@@ -1,0 +1,35 @@
+# Alice Browser Automation Dependencies
+# Python 3.10+ required
+
+# Core browser automation
+browser-use>=0.1.0
+playwright>=1.40.0
+
+# Ollama and LLM
+ollama>=0.1.0
+
+# LiveKit integration (already in main requirements)
+# livekit-agents>=0.8.0
+
+# Configuration and utilities
+PyYAML>=6.0
+python-dotenv>=1.0.0
+
+# Security and encryption
+keyring>=24.0.0
+cryptography>=41.0.0
+
+# Async support
+aiohttp>=3.9.0
+aiofiles>=23.0.0
+httpx>=0.25.0
+
+# Testing
+pytest>=7.4.0
+pytest-asyncio>=0.21.0
+pytest-mock>=3.12.0
+
+# Type checking and linting (development)
+mypy>=1.7.0
+black>=23.11.0
+flake8>=6.1.0
