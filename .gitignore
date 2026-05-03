@@ -24,3 +24,9 @@ test*.py
 verify_task_*.py
 **/tests/
 **/test/
+
+# --- Runtime/generated artifacts ---
+ALICE/Alice_code/alice_weather_cache.json
+
+# ALICE temporary runtime files
+ALICE/Alice_code/temp_alice_files/

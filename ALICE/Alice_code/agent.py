@@ -5,6 +5,8 @@ from livekit.plugins import google, noise_cancellation, silero
 import logging
 import os
 import sys
+import socket
+from urllib.parse import urlparse
 
 # Fix Windows Unicode encoding issues
 if sys.platform == "win32":
@@ -139,8 +141,53 @@ else:
 
 user_id = "Ankush"
 
+_DOTENV_PATH = os.path.join(os.path.dirname(__file__), ".env")
+load_dotenv(dotenv_path=_DOTENV_PATH, override=False)
 
-load_dotenv()
+
+def _preflight_livekit_dns() -> bool:
+    """Fail fast with a clear message if LIVEKIT_URL is missing or DNS can't resolve.
+
+    The LiveKit Agents worker otherwise retries forever, which hides the real issue.
+    """
+    livekit_url = (os.getenv("LIVEKIT_URL") or "").strip()
+    if not livekit_url:
+        logger.error(
+            "LIVEKIT_URL is not set. Set it in %s (or environment) before starting.",
+            _DOTENV_PATH,
+        )
+        return False
+
+    parsed = urlparse(livekit_url)
+    host = parsed.hostname
+    scheme = (parsed.scheme or "").lower()
+    port = parsed.port
+    if port is None:
+        port = 443 if scheme in {"wss", "https"} else 80
+
+    if not host:
+        logger.error(
+            "LIVEKIT_URL looks invalid (%r). Expected e.g. wss://<project>.livekit.cloud",
+            livekit_url,
+        )
+        return False
+
+    try:
+        # Resolve host -> addresses (DNS). This is what fails with socket.gaierror.
+        socket.getaddrinfo(host, port)
+        return True
+    except socket.gaierror as exc:
+        logger.error(
+            "Cannot resolve LiveKit host %s:%s from LIVEKIT_URL=%r (DNS error: %s).",
+            host,
+            port,
+            livekit_url,
+            exc,
+        )
+        logger.error(
+            "Fix: check internet/DNS, or update LIVEKIT_URL. For local dev you can use LIVEKIT_URL=ws://localhost:7880 with a local LiveKit server."
+        )
+        return False
 
 async def entrypoint(ctx: agents.JobContext):
     """Enhanced entrypoint with MCP and Mem0 integration"""
@@ -409,6 +456,9 @@ if __name__ == "__main__":
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
     # ----------------------------
+
+    if not _preflight_livekit_dns():
+        raise SystemExit(2)
 
     agents.cli.run_app(agents.WorkerOptions(entrypoint_fnc=entrypoint))
 
