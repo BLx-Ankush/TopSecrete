@@ -88,12 +88,11 @@ except ImportError as e:
     ALICE_VISION_TOOLS = []
     VISION_AVAILABLE = False
 
-# Import WhatsApp Automation
-from alice_whatsapp_automation import (
-    send_whatsapp_message,
-    open_whatsapp_chat,
-    whatsapp_automation_help
-)
+"""WhatsApp automation removed.
+
+The WhatsApp tool wiring was intentionally removed because it was failing
+startup when the module isn't present in this distribution.
+"""
 
 # Servo control tool
 from alice_servo_control import control_servo_motor
@@ -294,7 +293,7 @@ async def entrypoint(ctx: agents.JobContext):
             logger.warning("Continuing without browser automation")
     
     # Combine built-in tools with MCP tools, Alice Vision, and Browser Automation
-    all_tools = [
+    base_tools = [
         enable_personal_mode,
         disable_personal_mode,
         open_application,
@@ -309,13 +308,11 @@ async def entrypoint(ctx: agents.JobContext):
         adjust_brightness,
         search_files_system,
         advanced_system_operations,
-        # WhatsApp automation tools
-        send_whatsapp_message,
-        open_whatsapp_chat,
-        whatsapp_automation_help,
         # Servo control tool
         control_servo_motor
-    ] + mcp_tools + ALICE_VISION_TOOLS + browser_tools
+    ]
+
+    all_tools = base_tools + mcp_tools + ALICE_VISION_TOOLS + browser_tools
 
     # 4. STARTUP MEMORY: Fetch existing memories before the agent starts
     logger.info(f"Fetching initial memories for user: {user_id}")
