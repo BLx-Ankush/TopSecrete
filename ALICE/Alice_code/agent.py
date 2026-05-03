@@ -94,8 +94,8 @@ The WhatsApp tool wiring was intentionally removed because it was failing
 startup when the module isn't present in this distribution.
 """
 
-# Servo control tool
-from alice_servo_control import control_servo_motor
+# Hardware control tools (Raspberry Pi)
+from alice_servo_control import control_servo_motor, get_ultrasonic_distance
 
 # Set up logging before optional imports that may log.
 logging.basicConfig(level=logging.INFO)
@@ -308,8 +308,9 @@ async def entrypoint(ctx: agents.JobContext):
         adjust_brightness,
         search_files_system,
         advanced_system_operations,
-        # Servo control tool
-        control_servo_motor
+        # Hardware control tools
+        control_servo_motor,
+        get_ultrasonic_distance,
     ]
 
     all_tools = base_tools + mcp_tools + ALICE_VISION_TOOLS + browser_tools
