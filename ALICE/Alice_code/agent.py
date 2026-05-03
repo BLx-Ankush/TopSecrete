@@ -1,7 +1,7 @@
 from dotenv import load_dotenv
 from livekit import agents
 from livekit.agents import AgentSession, Agent, RoomInputOptions, ChatContext, ChatMessage
-from livekit.plugins import google, noise_cancellation
+from livekit.plugins import google, noise_cancellation, silero
 import logging
 import os
 import sys
@@ -43,6 +43,40 @@ from alice_personal_safe import (
     advanced_system_operations
 )
 
+# Import Audio Configuration for NVIDIA Broadcast integration
+from livekit_audio_config import (
+    configure_livekit_audio_input,
+    log_audio_device_selection,
+    get_audio_device_info_for_voice_report
+)
+from audio_quality_validator import (
+    validate_audio_quality_on_session_start,
+    log_audio_quality_validation,
+    get_audio_quality_voice_report
+)
+
+# Import VAD Configuration
+from vad_config import (
+    get_vad_silence_threshold,
+    log_vad_configuration
+)
+
+# Import VAD Behavior Validation
+from vad_behavior_validator import (
+    validate_vad_behavior,
+    log_vad_validation_results,
+    get_vad_validation_voice_report
+)
+
+# Import VAD Turn-Taking Monitor
+from vad_turn_taking_monitor import (
+    get_turn_taking_monitor,
+    reset_turn_taking_monitor
+)
+
+# Import Interim Transcription Handler (Deepgram Nova-3 equivalent for Gemini)
+from interim_transcription_integration import setup_interim_transcription
+
 # Import Alice Vision Tools (optional)
 try:
     from alice_vision_tools import ALICE_VISION_TOOLS
@@ -58,6 +92,9 @@ from alice_whatsapp_automation import (
     open_whatsapp_chat,
     whatsapp_automation_help
 )
+
+# Servo control tool
+from alice_servo_control import control_servo_motor
 
 # Set up logging before optional imports that may log.
 logging.basicConfig(level=logging.INFO)
@@ -108,10 +145,75 @@ load_dotenv()
 async def entrypoint(ctx: agents.JobContext):
     """Enhanced entrypoint with MCP and Mem0 integration"""
     
-    # 1. TOOL INITIALIZATION: Initialize all tools and dynamic MCP tools
+    # 1. AUDIO CONFIGURATION: Configure NVIDIA Broadcast audio input
+    logger.info("=" * 60)
+    logger.info("Configuring audio input for LiveKit session")
+    logger.info("=" * 60)
+    
+    # Configure audio device (NVIDIA Broadcast or fallback)
+    audio_config = configure_livekit_audio_input()
+    log_audio_device_selection(audio_config)
+    
+    # Validate audio quality on session start
+    audio_device_index = int(audio_config['device_id']) if audio_config.get('device_id') else None
+    audio_validation = validate_audio_quality_on_session_start(device_index=audio_device_index)
+    log_audio_quality_validation(audio_validation)
+    
+    # Prepare voice report for user
+    audio_status_message = get_audio_device_info_for_voice_report()
+    if not audio_validation['passed']:
+        audio_status_message += " " + get_audio_quality_voice_report(audio_validation)
+    
+    logger.info(f"Audio status message for user: {audio_status_message}")
+    
+    # 2. TOOL INITIALIZATION: Initialize all tools and dynamic MCP tools
     logger.info("Initializing enhanced Alice agent with MCP and Mem0")
+    
+    # 2.1 VAD CONFIGURATION: Configure Voice Activity Detection
+    logger.info("=" * 60)
+    logger.info("Configuring Voice Activity Detection (VAD)")
+    logger.info("=" * 60)
+    
+    # Get VAD silence threshold from configuration
+    vad_silence_threshold = get_vad_silence_threshold()
+    log_vad_configuration(vad_silence_threshold)
+    
+    # Initialize Silero VAD with configured silence threshold
+    vad = silero.VAD.load(
+        min_silence_duration=vad_silence_threshold,
+        # Additional VAD parameters for optimal performance
+        min_speech_duration=0.05,  # Minimum speech duration to start detection (50ms)
+        prefix_padding_duration=0.5,  # Padding before speech starts (500ms)
+        activation_threshold=0.5,  # Threshold to consider a frame as speech
+    )
+    
+    logger.info(f"✅ VAD configured with {vad_silence_threshold * 1000:.0f}ms silence threshold")
+    
+    # 2.2 VAD BEHAVIOR VALIDATION: Validate VAD behavior meets requirements
+    logger.info("=" * 60)
+    logger.info("Validating VAD Behavior")
+    logger.info("=" * 60)
+    
+    # Run VAD behavior validation
+    vad_validation_summary = validate_vad_behavior(vad, vad_silence_threshold * 1000)
+    log_vad_validation_results(vad_validation_summary)
+    
+    # Prepare voice report for VAD validation
+    vad_validation_message = get_vad_validation_voice_report(vad_validation_summary)
+    logger.info(f"VAD validation message for user: {vad_validation_message}")
+    
+    # 2.3 TURN-TAKING MONITOR: Initialize turn-taking monitor
+    logger.info("=" * 60)
+    logger.info("Initializing Turn-Taking Monitor")
+    logger.info("=" * 60)
+    
+    # Create unique session ID
+    import uuid
+    session_id = str(uuid.uuid4())[:8]
+    turn_taking_monitor = get_turn_taking_monitor(session_id=session_id)
+    logger.info(f"✅ Turn-taking monitor initialized for session: {session_id}")
 
-    # 2. Setup MCP servers for extended functionality (temporarily disabled)
+    # 3. Setup MCP servers for extended functionality (temporarily disabled)
     # mcp_servers = []
     
     # Example: File system MCP server (if available)
@@ -132,7 +234,7 @@ async def entrypoint(ctx: agents.JobContext):
     #     except Exception as e:
     #         logger.error(f"Failed to load MCP tools: {e}")
     
-    # 3. Initialize Browser Automation (if available)
+    # 4. Initialize Browser Automation (if available)
     browser_tools = []
     if BROWSER_AUTOMATION_AVAILABLE:
         try:
@@ -163,7 +265,9 @@ async def entrypoint(ctx: agents.JobContext):
         # WhatsApp automation tools
         send_whatsapp_message,
         open_whatsapp_chat,
-        whatsapp_automation_help
+        whatsapp_automation_help,
+        # Servo control tool
+        control_servo_motor
     ] + mcp_tools + ALICE_VISION_TOOLS + browser_tools
 
     # 4. STARTUP MEMORY: Fetch existing memories before the agent starts
@@ -202,14 +306,38 @@ async def entrypoint(ctx: agents.JobContext):
                             {memory_str}''')
 
     # 3. BUILD AGENT: Create agent with enhanced tools
-    enhanced_agent = Assistant(chat_ctx=initial_ctx, tools_list=all_tools)
+    enhanced_agent = Assistant(chat_ctx=initial_ctx, tools_list=all_tools, vad_instance=vad)
 
-    # 5. Configure the Session with stable settings
+    # 4. Configure the Session with stable settings
     session = AgentSession(
         preemptive_generation=True
     )
+    
+    # 5. INTERIM TRANSCRIPTION: Set up interim transcription handling
+    # This provides Deepgram Nova-3 equivalent functionality for the Gemini Realtime Model
+    logger.info("=" * 60)
+    logger.info("Configuring interim transcription processing")
+    logger.info("=" * 60)
+    
+    interim_integration = setup_interim_transcription(session)
+    
+    # Optional: Register custom callbacks for interim results
+    def on_interim_transcript(transcript):
+        """Called when interim transcription results arrive"""
+        logger.debug(f"[Interim] Processing: {transcript.text[:30]}...")
+    
+    def on_final_transcript(transcript, differs_from_interim):
+        """Called when final transcription arrives"""
+        if differs_from_interim:
+            logger.info(f"[Final] Reconciled transcript: {transcript.text[:50]}...")
+    
+    interim_integration.register_interim_callback(on_interim_transcript)
+    interim_integration.register_final_callback(on_final_transcript)
 
     try:
+        # Note: Audio device configuration (NVIDIA Broadcast) is handled at the system level
+        # Windows should be configured to use "Microphone (NVIDIA Broadcast)" as default recording device
+        # LiveKit will automatically use the system default microphone
         await session.start(
             room=ctx.room,
             agent=enhanced_agent,
@@ -217,8 +345,18 @@ async def entrypoint(ctx: agents.JobContext):
                 noise_cancellation=noise_cancellation.BVC()
             ),
         )
+        
+        # Report audio status to user via voice
+        status_messages = [audio_status_message]
+        
+        # Add VAD validation message if there were issues
+        if not vad_validation_summary['all_passed']:
+            status_messages.append(vad_validation_message)
+        
+        combined_status = " ".join(status_messages)
+        
         await session.generate_reply(
-            instructions=Reply_prompts
+            instructions=f"{Reply_prompts}\n\nIMPORTANT: After greeting, inform the user: {combined_status}"
         )
         
         # Start memory extractor to save conversations
@@ -232,6 +370,10 @@ async def entrypoint(ctx: agents.JobContext):
         # The session will run until the room is closed or an error occurs
         
     finally:
+        # Log turn-taking session summary
+        if turn_taking_monitor:
+            turn_taking_monitor.log_session_summary()
+        
         # Cleanup browser automation on shutdown
         if BROWSER_AUTOMATION_AVAILABLE and shutdown_browser_automation:
             try:
@@ -242,7 +384,7 @@ async def entrypoint(ctx: agents.JobContext):
 
 
 class Assistant(Agent):
-    def __init__(self, chat_ctx, tools_list) -> None:
+    def __init__(self, chat_ctx, tools_list, vad_instance) -> None:
         super().__init__(
             instructions=instructions_prompt,
             chat_ctx=chat_ctx,
@@ -250,7 +392,8 @@ class Assistant(Agent):
                 model="gemini-2.5-flash-native-audio-preview-12-2025",
                 voice="Erinome"
             ),
-            tools=tools_list
+            tools=tools_list,
+            vad=vad_instance  # Pass VAD instance to Agent
         )
 
 

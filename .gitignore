@@ -1,0 +1,26 @@
+# --- Python / caches ---
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# --- Virtual envs / secrets ---
+.venv/
+.env
+.env.*
+!.env.example
+
+# --- OS/editor ---
+.DS_Store
+Thumbs.db
+
+# --- Exclude markdown docs (keep ONLY root README.md) ---
+*.md
+!/README.md
+
+# --- Exclude test files ---
+test*.py
+*_test.py
+*_test_*.py
+verify_task_*.py
+**/tests/
+**/test/
