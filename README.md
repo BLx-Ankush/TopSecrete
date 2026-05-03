@@ -40,6 +40,7 @@ ALICE is built around a realtime voice pipeline (LiveKit) and a tool‑calling a
 - **Desktop automation (Windows)**: app launching, window control, keyboard/mouse actions
 - **Vision + OCR**: analyze screenshots/screen text and use that to guide actions
 - **Browser automation** (Playwright‑based) for multi‑step web tasks
+- **Hardware automation (IoT)**: servo motor control + ultrasonic distance reading via a Raspberry Pi HTTP controller
 - **Memory (optional)**: persist useful user context across sessions (when configured)
 - **Safety gate**: a 4‑digit code launcher before starting the full system
 
