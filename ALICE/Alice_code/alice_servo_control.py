@@ -4,14 +4,32 @@ Sends simple servo commands to a Raspberry Pi HTTP endpoint.
 """
 
 import os
+import asyncio
 import requests
 from livekit.agents import function_tool
 
-PI_IP = os.getenv("ALICE_PI_IP", "10.183.22.127")
-PI_PORT = os.getenv("ALICE_PI_PORT", "5000")
-ULTRASONIC_PATH = os.getenv("ALICE_PI_ULTRASONIC_PATH", "/ultrasonic")
-
 _ALLOWED_COMMANDS = {"left", "center", "right", "stop"}
+
+
+def _pi_config() -> tuple[str, str, str]:
+    """Read Pi configuration from environment at call-time.
+
+    This avoids stale defaults if env vars change after import.
+    """
+    pi_ip = os.getenv("ALICE_PI_IP", "10.183.22.127").strip()
+    pi_port = os.getenv("ALICE_PI_PORT", "5000").strip()
+    ultrasonic_path = os.getenv("ALICE_PI_ULTRASONIC_PATH", "/ultrasonic").strip() or "/ultrasonic"
+    if not ultrasonic_path.startswith("/"):
+        ultrasonic_path = "/" + ultrasonic_path
+    return pi_ip, pi_port, ultrasonic_path
+
+
+def _post_json(url: str, payload: dict, timeout_s: float) -> requests.Response:
+    return requests.post(url, json=payload, timeout=timeout_s)
+
+
+def _get(url: str, timeout_s: float) -> requests.Response:
+    return requests.get(url, timeout=timeout_s)
 
 
 @function_tool(
@@ -35,14 +53,19 @@ async def control_servo_motor(command: str) -> str:
             + ", ".join(sorted(_ALLOWED_COMMANDS))
         )
 
-    url = f"http://{PI_IP}:{PI_PORT}/command"
+    pi_ip, pi_port, _ = _pi_config()
+    url = f"http://{pi_ip}:{pi_port}/command"
     try:
-        response = requests.post(url, json={"cmd": cmd}, timeout=3)
+        response = await asyncio.to_thread(_post_json, url, {"cmd": cmd}, 5)
         if response.ok:
             return f"✅ Servo command sent: {cmd}"
         return f"❌ Pi error {response.status_code}: {response.text}"
     except requests.RequestException as exc:
-        return f"❌ Connection error: {exc}"
+        return (
+            "❌ Connection error while sending servo command. "
+            f"Tried: {url}. "
+            f"Details: {exc}"
+        )
 
 
 @function_tool(
@@ -58,9 +81,10 @@ async def get_ultrasonic_distance() -> str:
 
     Expects either JSON like {"distance_cm": 12.3} or a plain number.
     """
-    url = f"http://{PI_IP}:{PI_PORT}{ULTRASONIC_PATH}"
+    pi_ip, pi_port, ultrasonic_path = _pi_config()
+    url = f"http://{pi_ip}:{pi_port}{ultrasonic_path}"
     try:
-        response = requests.get(url, timeout=3)
+        response = await asyncio.to_thread(_get, url, 5)
         if not response.ok:
             return f"❌ Pi error {response.status_code}: {response.text}"
 
@@ -86,4 +110,8 @@ async def get_ultrasonic_distance() -> str:
             return "❌ Invalid distance reading."
         return f"✅ Object detected at {distance_cm:.1f} cm"
     except requests.RequestException as exc:
-        return f"❌ Connection error: {exc}"
+        return (
+            "❌ Connection error while reading ultrasonic sensor. "
+            f"Tried: {url}. "
+            f"Details: {exc}"
+        )
