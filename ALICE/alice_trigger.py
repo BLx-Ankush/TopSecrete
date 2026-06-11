@@ -55,18 +55,42 @@ def validate_code(entered_code):
     
     return True, "Code validated successfully"
 
+def resolve_python_exe():
+    """Find the best Python executable to run Alice agent"""
+    alice_path = os.path.join(os.path.dirname(__file__), "Alice_code")
+    _venv_candidates = [
+        os.path.join(alice_path, "venv", "Scripts", "python.exe"),          # venv inside Alice_code (NEW!)
+        os.path.join(alice_path, "venv_new", "Scripts", "python.exe"),      # legacy name
+        r"D:\ProjectAlice\venv\Scripts\python.exe",                         # shared ProjectAlice venv (fallback)
+        os.path.join(os.path.dirname(alice_path), "venv", "Scripts", "python.exe"),  # sibling venv
+    ]
+    found_python = next((p for p in _venv_candidates if os.path.exists(p)), sys.executable)
+    print(f"🐍 Using Python: {found_python}")
+    return found_python
+
 def check_alice_vision_system():
     """Quick check to ensure vision/OCR capabilities are available"""
     try:
-        # Add Alice_code to path for import
+        python_exe = resolve_python_exe()
         alice_path = os.path.join(os.path.dirname(__file__), "Alice_code")
-        if alice_path not in sys.path:
-            sys.path.insert(0, alice_path)
         
-        # Try to import vision tools
-        from alice_vision_tools import ALICE_VISION_TOOLS
-        
-        vision_count = len(ALICE_VISION_TOOLS)
+        # Run import and length check in a subprocess using correct python_exe
+        check_code = (
+            "import sys; "
+            f"sys.path.insert(0, r'{alice_path}'); "
+            "from alice_vision_tools import ALICE_VISION_TOOLS; "
+            "print(len(ALICE_VISION_TOOLS))"
+        )
+        res = subprocess.run(
+            [python_exe, "-c", check_code],
+            capture_output=True,
+            text=True,
+            check=True,
+            timeout=10
+        )
+        # Get only the last line that should be the count
+        output_lines = res.stdout.strip().split('\n')
+        vision_count = int(output_lines[-1])
         if vision_count >= 11:  # Should have 11 tools including OCR
             print(f"✅ Vision System: {vision_count} tools ready (including OCR)")
             return True
@@ -75,7 +99,7 @@ def check_alice_vision_system():
             return False
             
     except Exception as e:
-        print(f"⚠️ Vision System: {e}")
+        print(f"⚠️ Vision System: {str(e)[:100]}")
         return False
 
 def start_alice():
@@ -113,8 +137,9 @@ def start_alice():
         print("🌐 Starting Backend Agent + Web Interface...")
         print("-" * 50)
         
-        # Try different npm commands to handle PATH issues
-        npm_commands = ["npm", "npm.cmd", "pnpm", "pnpm.cmd"]
+        # Try different npm/pnpm commands to handle PATH issues
+        # pnpm is the primary package manager (pnpm-lock.yaml present)
+        npm_commands = ["pnpm", "pnpm.cmd", "npm", "npm.cmd"]
         npm_found = None
         
         for npm_cmd in npm_commands:
@@ -132,9 +157,8 @@ def start_alice():
             
             # Fallback: Start only the backend
             os.chdir(alice_path)
-            python_exe = os.path.join(alice_path, "venv_new", "Scripts", "python.exe")
-            if not os.path.exists(python_exe):
-                python_exe = sys.executable  # Use system Python as fallback
+            python_exe = resolve_python_exe()
+            print(f"🐍 Using Python: {python_exe}")
             
             
             process = subprocess.Popen(

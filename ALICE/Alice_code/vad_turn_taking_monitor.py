@@ -6,16 +6,22 @@ This module monitors VAD-based turn-taking behavior to ensure:
 - Alice responds within 200ms of VAD trigger
 - Conversation state is maintained across overlapping exchanges
 
-Requirements: 4.3, 5.1, 5.2, 5.3
+Enhanced for Alice Conversation Fluidity Enhancement:
+- Neural turn detection event tracking (false trigger rates)
+- Interruption classification event tracking (false interruption rates)
+- Dashboard metric export
+
+Requirements: 4.3, 5.1, 5.2, 5.3, 10.1, 10.2, 10.3, 10.4, 10.5, 10.6, 10.7
 """
 
 import logging
 import time
-from typing import Dict, Optional, List
+from typing import Any, Dict, List, Optional
 from dataclasses import dataclass, field
 from datetime import datetime
 
 logger = logging.getLogger(__name__)
+
 
 
 @dataclass
@@ -303,3 +309,241 @@ def reset_turn_taking_monitor() -> None:
     """Reset the global turn-taking monitor"""
     global _global_monitor
     _global_monitor = None
+
+
+# ===========================================================================
+# Enhanced Neural Fluidity Monitor
+# Added for Alice Conversation Fluidity Enhancement (Tasks 9.1, 9.2)
+# Requirements: 10.1, 10.2, 10.3, 10.4, 10.5, 10.6, 10.7
+# ===========================================================================
+
+class NeuralFluidityMonitor:
+    """
+    Extended turn-taking monitor that tracks neural turn detection events
+    and interruption classification events for fluidity quality measurement.
+
+    Sits alongside the existing VADTurnTakingMonitor and adds:
+      - Neural turn detector trigger events
+      - False trigger tracking (post-hoc labeling)
+      - Interruption classification events
+      - False interruption tracking (post-hoc labeling)
+      - Dashboard metric export
+
+    Requirements: 10.1, 10.2, 10.3, 10.4, 10.5, 10.6, 10.7
+    """
+
+    def __init__(self, session_id: str = "default"):
+        self.session_id = session_id
+
+        # Turn detection events
+        self._turn_detection_events: List[Dict[str, Any]] = []
+        self._false_trigger_ids: set = set()
+
+        # Interruption events
+        self._interruption_events: List[Dict[str, Any]] = []
+        self._false_interruption_ids: set = set()
+
+        logger.info(f"[NeuralFluidityMonitor] Initialized for session: {session_id}")
+
+    # ------------------------------------------------------------------
+    # Neural turn detection tracking  (Requirements: 10.1, 10.2, 10.4)
+    # ------------------------------------------------------------------
+
+    def on_neural_turn_detected(self, event: Dict[str, Any]) -> None:
+        """
+        Record a neural turn detection event.
+
+        Args:
+            event: TurnDetectionEvent.to_dict() or compatible dict.
+                   Must contain 'event_id', 'triggered', 'detector_type'.
+
+        Requirements: 10.1, 10.2, 10.4
+        """
+        self._turn_detection_events.append(event)
+        logger.debug(
+            f"[NeuralFluidityMonitor] Turn event recorded: "
+            f"id={event.get('event_id', '?')}, "
+            f"triggered={event.get('triggered')}, "
+            f"confidence={event.get('end_of_turn_confidence', '?'):.2f}"
+        )
+
+    def mark_false_trigger(self, event_id: str) -> bool:
+        """
+        Post-hoc label a turn detection event as a false trigger.
+
+        Args:
+            event_id: The event_id to label.
+
+        Returns:
+            True if found and labeled, False otherwise.
+
+        Requirements: 10.4, 10.7
+        """
+        for evt in self._turn_detection_events:
+            if evt.get("event_id") == event_id:
+                evt["is_false_trigger"] = True
+                self._false_trigger_ids.add(event_id)
+                logger.info(f"[NeuralFluidityMonitor] Marked false trigger: {event_id}")
+                return True
+        return False
+
+    def get_false_trigger_rate(self) -> float:
+        """
+        Calculate false trigger rate as a percentage.
+
+        Only triggered events are counted as the denominator (un-triggered
+        events are non-events and cannot be false triggers).
+
+        Returns:
+            False trigger rate in [0.0, 100.0] percent.
+
+        Requirements: 10.4, 10.6
+        """
+        triggered = [e for e in self._turn_detection_events if e.get("triggered")]
+        if not triggered:
+            return 0.0
+        false_triggers = [e for e in triggered if e.get("is_false_trigger")]
+        return (len(false_triggers) / len(triggered)) * 100.0
+
+    # ------------------------------------------------------------------
+    # Interruption classification tracking  (Requirements: 10.3, 10.5)
+    # ------------------------------------------------------------------
+
+    def on_interruption_classified(self, event: Dict[str, Any]) -> None:
+        """
+        Record an interruption classification event.
+
+        Args:
+            event: InterruptionEvent.to_dict() or compatible dict.
+                   Must contain 'event_id', 'classification'.
+
+        Requirements: 10.3, 10.5
+        """
+        self._interruption_events.append(event)
+        logger.debug(
+            f"[NeuralFluidityMonitor] Interruption event recorded: "
+            f"id={event.get('event_id', '?')}, "
+            f"classification={event.get('classification', '?')}"
+        )
+
+    def mark_false_interruption(self, event_id: str) -> bool:
+        """
+        Post-hoc label an interruption event as a false interruption.
+
+        Returns:
+            True if found and labeled, False otherwise.
+
+        Requirements: 10.5, 10.7
+        """
+        for evt in self._interruption_events:
+            if evt.get("event_id") == event_id:
+                evt["is_false_interruption"] = True
+                self._false_interruption_ids.add(event_id)
+                logger.info(
+                    f"[NeuralFluidityMonitor] Marked false interruption: {event_id}"
+                )
+                return True
+        return False
+
+    def get_false_interruption_rate(self) -> float:
+        """
+        Calculate false interruption rate as a percentage.
+
+        Only 'genuine_interruption' classifications count as denominator
+        (background_sound / noise cannot be false interruptions).
+
+        Returns:
+            False interruption rate in [0.0, 100.0] percent.
+
+        Requirements: 10.5, 10.6
+        """
+        genuine = [
+            e for e in self._interruption_events
+            if e.get("classification") == "genuine_interruption"
+        ]
+        if not genuine:
+            return 0.0
+        false_ints = [e for e in genuine if e.get("is_false_interruption")]
+        return (len(false_ints) / len(genuine)) * 100.0
+
+    # ------------------------------------------------------------------
+    # Dashboard export  (Requirements: 10.6, 10.7)
+    # ------------------------------------------------------------------
+
+    def export_metrics_to_dashboard(self) -> Dict[str, Any]:
+        """
+        Export all fluidity metrics for monitoring dashboard.
+
+        Requirements: 10.6, 10.7
+        """
+        triggered = [e for e in self._turn_detection_events if e.get("triggered")]
+        genuine_ints = [
+            e for e in self._interruption_events
+            if e.get("classification") == "genuine_interruption"
+        ]
+        noise_ints = [
+            e for e in self._interruption_events
+            if e.get("classification") == "noise"
+        ]
+        bg_ints = [
+            e for e in self._interruption_events
+            if e.get("classification") == "background_sound"
+        ]
+
+        return {
+            "session_id": self.session_id,
+            "neural_turn_detection": {
+                "total_events": len(self._turn_detection_events),
+                "triggered_events": len(triggered),
+                "false_trigger_count": len(self._false_trigger_ids),
+                "false_trigger_rate_pct": round(self.get_false_trigger_rate(), 2),
+            },
+            "interruption_classification": {
+                "total_events": len(self._interruption_events),
+                "genuine_interruptions": len(genuine_ints),
+                "noise_classifications": len(noise_ints),
+                "background_classifications": len(bg_ints),
+                "false_interruption_count": len(self._false_interruption_ids),
+                "false_interruption_rate_pct": round(self.get_false_interruption_rate(), 2),
+            },
+        }
+
+    def log_session_summary(self) -> None:
+        """Log a human-readable fluidity session summary."""
+        metrics = self.export_metrics_to_dashboard()
+        nd = metrics["neural_turn_detection"]
+        ic = metrics["interruption_classification"]
+
+        logger.info("=" * 70)
+        logger.info("FLUIDITY MONITOR SESSION SUMMARY")
+        logger.info("=" * 70)
+        logger.info(f"Session ID              : {self.session_id}")
+        logger.info(f"Turn Detection Events   : {nd['total_events']} "
+                    f"({nd['triggered_events']} triggered)")
+        logger.info(f"False Trigger Rate      : {nd['false_trigger_rate_pct']:.1f}% "
+                    f"(target: <5%)")
+        logger.info(f"Interruption Events     : {ic['total_events']} total")
+        logger.info(f"  Genuine interruptions : {ic['genuine_interruptions']}")
+        logger.info(f"  Noise                 : {ic['noise_classifications']}")
+        logger.info(f"  Background sounds     : {ic['background_classifications']}")
+        logger.info(f"False Interruption Rate : {ic['false_interruption_rate_pct']:.1f}% "
+                    f"(target: <10%)")
+        logger.info("=" * 70)
+
+
+# Module-level neural fluidity monitor
+_global_neural_monitor: Optional[NeuralFluidityMonitor] = None
+
+
+def get_neural_fluidity_monitor(session_id: str = "default") -> NeuralFluidityMonitor:
+    """Get or create the global NeuralFluidityMonitor."""
+    global _global_neural_monitor
+    if _global_neural_monitor is None or _global_neural_monitor.session_id != session_id:
+        _global_neural_monitor = NeuralFluidityMonitor(session_id=session_id)
+    return _global_neural_monitor
+
+
+def reset_neural_fluidity_monitor() -> None:
+    """Reset the global neural fluidity monitor (mainly for testing)."""
+    global _global_neural_monitor
+    _global_neural_monitor = None

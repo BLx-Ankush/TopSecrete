@@ -8,7 +8,7 @@
     "dev:with-n8n": "concurrently \"pnpm next:dev\" \"pnpm backend\" \"pnpm start:n8n\"",
     "next:dev": "next dev --turbopack",
     "start:n8n": "npx --yes n8n start",
-    "backend": "cd ..\\Alice_code && \"..\\..\\.venv\\Scripts\\python.exe\" agent.py dev",
+    "backend": "cd ..\\Alice_code && ..\\Alice_code\\venv\\Scripts\\python.exe agent.py dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",

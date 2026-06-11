@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>The Hard Truth: Where ALICE Fails</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg:        #0a0505;
+      --bg2:       #160a0a;
+      --bg3:       #240f0f;
+      --border:    rgba(239, 68, 68, 0.15);
+      --red:       #ef4444;
+      --red-glow:  #b91c1c;
+      --alice:     #8b5cf6;
+      --apple:     #f8fafc;
+      --copilot:   #0ea5e9;
+      --text:      #e2e8f0;
+      --muted:     #94a3b8;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── Animated background ─────────────────────── */
+    .bg-orb {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(150px);
+      opacity: 0.15;
+      pointer-events: none;
+      animation: drift 15s ease-in-out infinite alternate;
+      z-index: 0;
+    }
+    .bg-orb.o1 { width:600px;height:600px;background:var(--red-glow);top:-200px;right:-100px; }
+    .bg-orb.o2 { width:500px;height:500px;background:#7f1d1d;bottom:-150px;left:-150px;animation-delay:5s; }
+
+    /* ── Layout ──────────────────────────────────── */
+    .page { max-width: 1200px; margin: 0 auto; padding: 4rem 2rem 6rem; position: relative; z-index: 1; }
+
+    /* ── Hero ────────────────────────────────────── */
+    .hero { text-align: center; margin-bottom: 5rem; }
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 0.6rem;
+      background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3);
+      border-radius: 999px; padding: 0.4rem 1.25rem; font-size: 0.8rem;
+      font-weight: 700; color: #fca5a5; letter-spacing: 0.1em;
+      text-transform: uppercase; margin-bottom: 1.5rem;
+    }
+    .hero-badge::before { content:''; width:8px;height:8px;border-radius:50%;background:#fca5a5;animation:pulse 2s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+    
+    .hero h1 {
+      font-size: clamp(2.5rem, 5vw, 4rem); font-weight: 900; line-height: 1.1;
+      background: linear-gradient(135deg, #ffffff 0%, #fca5a5 50%, #ef4444 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      margin-bottom: 1.5rem; letter-spacing: -0.02em;
+    }
+    .hero p {
+      color: var(--muted); font-size: 1.2rem; max-width: 750px;
+      margin: 0 auto; line-height: 1.6; font-weight: 400;
+    }
+
+    /* ── Brutal Truth Cards ──────────────────────── */
+    .grid {
+      display: grid; grid-template-columns: 1fr; gap: 2rem;
+    }
+    @media(min-width: 900px) { .grid { grid-template-columns: 1fr 1fr; } }
+
+    .card {
+      background: rgba(22, 10, 10, 0.6);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 2.5rem;
+      backdrop-filter: blur(20px);
+      transition: transform 0.3s, border-color 0.3s;
+      position: relative;
+      overflow: hidden;
+    }
+    .card:hover {
+      transform: translateY(-5px);
+      border-color: rgba(239, 68, 68, 0.4);
+    }
+    .card::before {
+      content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%;
+      background: linear-gradient(to bottom, var(--red), transparent);
+    }
+
+    .c-header { display: flex; align-items: center; gap: 1rem; margin-bottom: 1.25rem; }
+    .c-icon { font-size: 2rem; background: rgba(239, 68, 68, 0.1); width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; border-radius: 16px; border: 1px solid rgba(239,68,68,0.2); }
+    .c-title { font-size: 1.35rem; font-weight: 800; color: #fff; }
+    
+    .c-desc { color: #cbd5e1; font-size: 0.95rem; line-height: 1.6; margin-bottom: 2rem; }
+
+    .versus-box {
+      background: rgba(0,0,0,0.3); border-radius: 12px; padding: 1.5rem;
+      border: 1px solid rgba(255,255,255,0.05);
+    }
+    .vs-row { display: flex; align-items: flex-start; gap: 1rem; margin-bottom: 1.25rem; }
+    .vs-row:last-child { margin-bottom: 0; }
+    
+    .vs-brand { font-weight: 800; font-size: 0.85rem; letter-spacing: 0.05em; text-transform: uppercase; width: 100px; flex-shrink: 0; }
+    .vs-alice { color: var(--red); }
+    .vs-other { color: #34d399; }
+    
+    .vs-text { font-size: 0.9rem; color: var(--muted); line-height: 1.5; }
+    .vs-text strong { color: #e2e8f0; }
+
+    /* ── Animations ──────────────────────────────── */
+    @keyframes fadeUp { from { opacity:0; transform: translateY(30px); } to { opacity:1; transform: translateY(0); } }
+    .anim { animation: fadeUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) both; }
+    .d-1 { animation-delay: 0.1s; }
+    .d-2 { animation-delay: 0.2s; }
+    .d-3 { animation-delay: 0.3s; }
+    .d-4 { animation-delay: 0.4s; }
+
+  </style>
+</head>
+<body>
+
+<div class="bg-orb o1"></div>
+<div class="bg-orb o2"></div>
+
+<div class="page">
+  
+  <div class="hero anim">
+    <div class="hero-badge">Critical Anti-Benchmark</div>
+    <h1>The Hard Truth:<br/>Where ALICE is Worse</h1>
+    <p>We built ALICE to be a powerful, open, and unrestricted AI agent. But the architectural choices that give her freedom also introduce fundamental flaws when compared to deeply-embedded, multi-billion-dollar commercial operating systems.</p>
+  </div>
+
+  <div class="grid">
+    
+    <!-- Issue 1 -->
+    <div class="card anim d-1">
+      <div class="c-header">
+        <div class="c-icon">👁️</div>
+        <div class="c-title">No Passive Context Awareness</div>
+      </div>
+      <p class="c-desc">ALICE relies on active querying. She only sees what is currently on the screen when explicitly asked, and only remembers what is explicitly spoken during a LiveKit session.</p>
+      <div class="versus-box">
+        <div class="vs-row">
+          <div class="vs-brand vs-other">Copilot</div>
+          <div class="vs-text"><strong>Windows Recall</strong> takes passive snapshots of the screen 24/7. You can ask Copilot "what was that blue shoe I looked at yesterday?" and it instantly searches its passive visual database.</div>
+        </div>
+        <div class="vs-row">
+          <div class="vs-brand vs-alice">ALICE</div>
+          <div class="vs-text">Because ALICE is a Python script, running constant 24/7 screen recording would destroy local performance. She is completely blind to anything that happens outside of an active query.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Issue 2 -->
+    <div class="card anim d-2">
+      <div class="c-header">
+        <div class="c-icon">🧱</div>
+        <div class="c-title">Overlay Fragility vs Deep Embedding</div>
+      </div>
+      <p class="c-desc">ALICE operates purely as a visual overlay using `pyautogui` and Gemini Flash. She looks at the screen like a human does, which is great for legacy apps, but highly prone to breaking.</p>
+      <div class="versus-box">
+        <div class="vs-row">
+          <div class="vs-brand vs-other">Apple</div>
+          <div class="vs-text"><strong>Apple Intelligence</strong> uses App Intents to talk directly to the underlying code of an app. If a button is hidden under a menu, Siri can still trigger its code programmatically instantly.</div>
+        </div>
+        <div class="vs-row">
+          <div class="vs-brand vs-alice">ALICE</div>
+          <div class="vs-text">If a pop-up blocks the screen, or if a button is scrolled out of view, ALICE fails. She literally has to click "scroll down" and look again, mimicking human friction instead of bypassing it.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Issue 3 -->
+    <div class="card anim d-3">
+      <div class="c-header">
+        <div class="c-icon">🔋</div>
+        <div class="c-title">Power Drain & Hardware Demands</div>
+      </div>
+      <p class="c-desc">To achieve low latency and local fallback, ALICE requires significant compute power. A local VLM or LLM fallback will drain a laptop battery incredibly fast.</p>
+      <div class="versus-box">
+        <div class="vs-row">
+          <div class="vs-brand vs-other">Apple/MS</div>
+          <div class="vs-text">Commercial OS AIs route tasks to <strong>dedicated low-power NPUs</strong> (Neural Processing Units). They run background SLMs using almost zero battery.</div>
+        </div>
+        <div class="vs-row">
+          <div class="vs-brand vs-alice">ALICE</div>
+          <div class="vs-text">Rerouting to Ollama spins up the main GPU/CPU. When ALICE uses her vision engine, taking a screenshot, hashing it, and sending it over HTTPS is incredibly inefficient compared to on-device tensor execution.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Issue 4 -->
+    <div class="card anim d-4">
+      <div class="c-header">
+        <div class="c-icon">🛡️</div>
+        <div class="c-title">The Prompt Injection Attack Surface</div>
+      </div>
+      <p class="c-desc">While ALICE now has a "Conversational Manifest", she fundamentally runs inside a user-space Python process with access to the terminal and filesystem.</p>
+      <div class="versus-box">
+        <div class="vs-row">
+          <div class="vs-brand vs-other">iOS / macOS</div>
+          <div class="vs-text">Apple Intelligence operates in a heavily sandboxed ring. Even if an attacker uses prompt injection to say "Delete everything", Siri simply does not possess the kernel-level authority to wipe a drive.</div>
+        </div>
+        <div class="vs-row">
+          <div class="vs-brand vs-alice">ALICE</div>
+          <div class="vs-text">ALICE uses LLM decision-making to control `subprocess.Popen`. A sophisticated prompt injection hidden in a webpage ALICE is reading could theoretically trick her into bypassing her own Python guardrails.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Issue 5 -->
+    <div class="card anim d-4">
+      <div class="c-header">
+        <div class="c-icon">📱</div>
+        <div class="c-title">Ecosystem Isolation</div>
+      </div>
+      <p class="c-desc">ALICE is a hyper-localized agent. She lives strictly on the machine where her Python environment is running.</p>
+      <div class="versus-box">
+        <div class="vs-row">
+          <div class="vs-brand vs-other">Gemini</div>
+          <div class="vs-text"><strong>Gemini Advanced</strong> syncs seamlessly. You ask it to draft an email on your phone, and it's instantly available in Google Docs on your desktop, with context of your Maps data.</div>
+        </div>
+        <div class="vs-row">
+          <div class="vs-brand vs-alice">ALICE</div>
+          <div class="vs-text">ALICE has no cloud-sync companion app. She cannot access your phone's GPS, she cannot text you when you are away from the computer, and her Mem0 database is stranded locally.</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+</body>
+</html>

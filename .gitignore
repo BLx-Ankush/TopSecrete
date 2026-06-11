@@ -1,32 +1,192 @@
-# --- Python / caches ---
+# ============================================================
+# Alice Project .gitignore
+# Excludes: Hermes agent, sensitive files, build artifacts
+# ============================================================
+
+# ──────────────────────────────────────────────────────────
+# 🚫 EXCLUDE HERMES AGENT (Entire Directory)
+# ──────────────────────────────────────────────────────────
+hermes-agent-main/
+
+# ──────────────────────────────────────────────────────────
+# 🔐 SENSITIVE FILES (Never Commit!)
+# ──────────────────────────────────────────────────────────
+# Environment variables with API keys
+.env
+.env.local
+.env.*.local
+*.env
+**/.env
+
+# API Keys and Secrets
+**/credentials.json
+**/service-account*.json
+**/*-credentials.json
+*.key
+*.pem
+*.p12
+
+# ──────────────────────────────────────────────────────────
+# 🐍 PYTHON
+# ──────────────────────────────────────────────────────────
+# Virtual Environments
+venv/
+venv_new/
+env/
+ENV/
+.venv/
+*.egg-info/
+dist/
+build/
+
+# Python Cache
 __pycache__/
 *.py[cod]
+*$py.class
+*.so
+.Python
+
+# Testing
 .pytest_cache/
+.coverage
+htmlcov/
+.tox/
+*.cover
 
-# --- Virtual envs / secrets ---
-.venv/
-.env
-.env.*
-!.env.example
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
 
-# --- OS/editor ---
-.DS_Store
+# ──────────────────────────────────────────────────────────
+# 📦 NODE.JS / NEXT.JS
+# ──────────────────────────────────────────────────────────
+# Dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.pnpm-store/
+
+# Next.js
+.next/
+out/
+next-env.d.ts
+.vercel
+
+# Build outputs
+dist/
+build/
+
+# ──────────────────────────────────────────────────────────
+# 🗄️ DATABASES & LOGS
+# ──────────────────────────────────────────────────────────
+*.sqlite
+*.sqlite3
+*.db
+*.log
+logs/
+*.log.*
+
+# ──────────────────────────────────────────────────────────
+# 💾 OPERATING SYSTEM
+# ──────────────────────────────────────────────────────────
+# Windows
 Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+*.lnk
 
-# --- Exclude markdown docs (keep ONLY root README.md) ---
-*.md
-!/README.md
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
 
-# --- Exclude test files ---
-test*.py
-*_test.py
-*_test_*.py
-verify_task_*.py
-**/tests/
-**/test/
+# Linux
+*~
+.directory
 
-# --- Runtime/generated artifacts ---
-ALICE/Alice_code/alice_weather_cache.json
+# ──────────────────────────────────────────────────────────
+# 🛠️ IDEs & EDITORS
+# ──────────────────────────────────────────────────────────
+# VSCode
+.vscode/
+*.code-workspace
 
-# ALICE temporary runtime files
-ALICE/Alice_code/temp_alice_files/
+# PyCharm
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# Vim
+*.swp
+*.swo
+*~
+
+# Sublime
+*.sublime-project
+*.sublime-workspace
+
+# ──────────────────────────────────────────────────────────
+# 📁 PROJECT SPECIFIC
+# ──────────────────────────────────────────────────────────
+# Large model files
+*.pth
+*.onnx
+*.h5
+*.pkl
+*.joblib
+
+# Data files (if not needed in repo)
+data/raw/
+data/processed/
+*.csv
+*.xlsx
+*.parquet
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.bak
+*.backup
+
+# User-specific files
+user_data/
+sessions/
+uploads/
+
+# Kiro specific
+.kiro/
+
+# ──────────────────────────────────────────────────────────
+# ✅ WHAT TO INCLUDE (Whitelist)
+# ──────────────────────────────────────────────────────────
+# Keep example env files
+!.env.example
+!**/.env.example
+
+# Keep specific config templates
+!**/config.example.*
+!**/settings.example.*
+
+# ──────────────────────────────────────────────────────────
+# 📝 DOCUMENTATION & GUIDES (Keep These!)
+# ──────────────────────────────────────────────────────────
+# All markdown files are included by default
+# *.md files will be committed
+
+# Keep requirements files
+!requirements.txt
+!**/requirements.txt
+!package.json
+!**/package.json
+!pnpm-lock.yaml
+!**/pnpm-lock.yaml

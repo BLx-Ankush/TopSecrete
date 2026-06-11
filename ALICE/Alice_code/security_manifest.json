@@ -1,0 +1,50 @@
+{
+  "_comment": "ALICE Phase 4 Permission Manifest v2.0 — Tiered Conversational Security. ALICE manages this file herself through conversation. You should never need to edit this manually.",
+  "version": "2.0",
+
+  "tiers": {
+    "_comment_tiers": "Three tiers of path trust. ALICE respects these without asking.",
+    "always_allowed": [
+      "D:\\ALICE(NEW)",
+      "C:\\Users\\NSPIRA\\Documents",
+      "C:\\Users\\NSPIRA\\Desktop",
+      "C:\\Users\\NSPIRA\\Downloads",
+      "C:\\Users\\NSPIRA\\Music",
+      "C:\\Users\\NSPIRA\\Pictures",
+      "C:\\Users\\NSPIRA\\Videos"
+    ],
+    "ask_each_time": [],
+    "never_allowed": [
+      "C:\\Windows\\System32",
+      "C:\\Windows\\SysWOW64",
+      "C:\\Program Files",
+      "C:\\Program Files (x86)"
+    ]
+  },
+
+  "allowed_executables": [
+    "notepad.exe", "calc.exe", "mspaint.exe", "chrome.exe",
+    "msedge.exe", "firefox.exe", "code.exe", "python.exe",
+    "powershell.exe", "explorer.exe", "vlc.exe",
+    "spotify.exe", "discord.exe", "teams.exe"
+  ],
+
+  "require_confirmation_for": [
+    "delete_file", "write_file", "move_file",
+    "execute_binary", "modify_registry", "shutdown", "restart"
+  ],
+
+  "access_history": {
+    "_comment": "ALICE tracks how many times she has accessed each path. Used to auto-suggest permanent permissions.",
+    "paths": {}
+  },
+
+  "settings": {
+    "strict_mode": false,
+    "log_all_checks": true,
+    "auto_deny_outside_manifest": false,
+    "confirmation_timeout_seconds": 15,
+    "auto_suggest_after_accesses": 3,
+    "onboarding_complete": false
+  }
+}

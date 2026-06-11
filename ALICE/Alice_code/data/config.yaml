@@ -1,0 +1,95 @@
+# ALICE Configuration File
+# This file contains the main configuration for ALICE with Hermes integration
+
+version: 1
+
+# LLM Configuration
+llm:
+  provider: openrouter  # Primary provider: openrouter, anthropic, openai, gemini, etc.
+  model: anthropic/claude-3.5-sonnet
+  fallback_providers: []  # List of fallback providers
+  api_keys: {}  # Credential pool configuration (use .env for actual keys)
+  max_retries: 3
+  retry_delay: 1.0
+  exponential_backoff: true
+  context_window: auto  # Auto-detect from model
+  compression_threshold: 0.50
+  compression_target: 0.20
+  preserve_last_n: 20
+
+# Voice Configuration (ALICE's primary mode)
+voice:
+  provider: gemini-realtime
+  model: gemini-2.0-flash-exp
+  livekit:
+    url: ${LIVEKIT_URL}
+    api_key: ${LIVEKIT_API_KEY}
+    api_secret: ${LIVEKIT_API_SECRET}
+  vad:
+    enabled: true
+    provider: silero
+    threshold: 0.5
+    sensitivity: 0.5
+
+# Memory Configuration
+memory:
+  provider: builtin  # builtin, honcho, mem0, supermemory, etc.
+  builtin:
+    memory_file: MEMORY.md
+    user_file: USER.md
+  # External providers configured here when needed
+  honcho:
+    enabled: false
+    api_key: ${HONCHO_API_KEY}
+    base_url: https://api.honcho.dev
+  mem0:
+    enabled: false
+    api_key: ${MEM0_API_KEY}
+
+# Skills Configuration
+skills:
+  auto_create: true  # Automatically create skills from complex tasks
+  skills_hub:
+    enabled: false
+    api_key: ${SKILLS_HUB_API_KEY}
+
+# Tools Configuration
+tools:
+  default_toolset: alice-cli
+  enabled_toolsets:
+    - alice-cli
+    - windows-automation
+    - hardware-control
+
+# Gateway Configuration (Multi-platform messaging)
+gateway:
+  enabled: false
+  platforms: []
+
+# Cron Scheduler Configuration
+cron:
+  enabled: false
+  jobs_file: cron/jobs.yaml
+
+# Security Configuration
+security:
+  approval_required: true
+  approval_timeout: 300  # 5 minutes
+  dangerous_patterns:
+    - "rm -rf"
+    - "del /f /s /q"
+    - "format"
+
+# Personality Configuration
+personality:
+  name: ALICE
+  language: hinglish  # Hindi + English mix
+  style: emotional-support
+  soul_file: SOUL.md
+
+# Logging Configuration
+logging:
+  level: INFO
+  directory: logs
+  max_size_mb: 10
+  backup_count: 5

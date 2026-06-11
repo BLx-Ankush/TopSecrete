@@ -33,6 +33,20 @@ except ImportError as e:
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# ── Semantic Vision Integration (replaces fragile pixel-coordinate clicking) ──
+# The SemanticVisionEngine sends a screenshot to Gemini Flash and asks it to
+# locate a named UI element, returning its center coordinate.  This is called
+# for all click-based operations, making them resolution and DPI independent.
+try:
+    from alice_semantic_vision import get_semantic_vision_engine
+    SEMANTIC_VISION_AVAILABLE = True
+    logger.info("✅ SemanticVisionEngine loaded — using Gemini-powered semantic clicking")
+except ImportError:
+    SEMANTIC_VISION_AVAILABLE = False
+    logger.warning("⚠️  SemanticVisionEngine not available — falling back to coordinate-based clicking")
+
+
+
 class AdvancedAppAutomation:
     def __init__(self):
         self.current_app_window = None
@@ -478,3 +492,72 @@ async def get_app_automation_help(app_name: str = "") -> str:
 • "save shortcut send karo notepad में"
 
 Use 'get_app_automation_help [app_name]' for specific app help! 😊"""
+
+
+# ── Semantic Vision Tools (resolution-independent UI interaction) ──────────────
+
+@function_tool(
+    name="semantic_click",
+    description=(
+        "Click any UI element on screen by describing it in plain English. "
+        "Uses Gemini Vision to visually locate the element — works regardless "
+        "of screen resolution, DPI, or window position. "
+        "Example: 'the blue Send button', 'the search bar at the top', 'the close X button'."
+    )
+)
+async def semantic_click(element_description: str, double_click: bool = False) -> str:
+    """
+    Click a UI element on screen described in plain English using Gemini Vision.
+
+    Args:
+        element_description: Natural language description of the element to click.
+        double_click: Set to True for a double-click (e.g. to open a file).
+
+    Returns:
+        Success or error message.
+    """
+    if not SEMANTIC_VISION_AVAILABLE:
+        return "❌ Semantic vision not available — SemanticVisionEngine could not be loaded."
+    try:
+        engine = get_semantic_vision_engine()
+        success = await engine.click_element(element_description, double_click=double_click)
+        if success:
+            return (
+                f"✅ {'Double-clicked' if double_click else 'Clicked'} "
+                f"'{element_description}' successfully."
+            )
+        return f"❌ Could not find '{element_description}' on screen. Is the window visible?"
+    except Exception as e:
+        return f"❌ Semantic click failed: {e}"
+
+
+@function_tool(
+    name="semantic_type_into",
+    description=(
+        "Click a specific input field on screen (described in plain English) "
+        "and type text into it. Uses Gemini Vision to locate the field — "
+        "immune to resolution changes. "
+        "Example: 'the WhatsApp message box', 'the address bar', 'the search field'."
+    )
+)
+async def semantic_type_into(element_description: str, text: str) -> str:
+    """
+    Find an input field by description and type text into it.
+
+    Args:
+        element_description: Natural language description of the input field.
+        text: The text to type into the field.
+
+    Returns:
+        Success or error message.
+    """
+    if not SEMANTIC_VISION_AVAILABLE:
+        return "❌ Semantic vision not available."
+    try:
+        engine = get_semantic_vision_engine()
+        success = await engine.type_into_element(element_description, text)
+        if success:
+            return f"✅ Typed into '{element_description}': {text[:80]}"
+        return f"❌ Could not find '{element_description}' on screen."
+    except Exception as e:
+        return f"❌ Semantic type failed: {e}"

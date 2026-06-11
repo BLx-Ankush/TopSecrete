@@ -1,6 +1,13 @@
 """
-Alice Vision Tools - LiveKit Agent Integration
-Provides Alice with vision capabilities through LiveKit agent tools with intelligent VLM optimization
+Alice Vision Tools — DEPRECATED (Phase 3: Semantic Vision Migration)
+
+⚠️  This module is preserved for backward compatibility only.
+    New code should import from alice_semantic_vision instead:
+        from alice_semantic_vision import get_semantic_vision_engine
+    Or use the registered tools semantic_click / semantic_type_into.
+
+The ALICE_VISION_TOOLS list at the bottom of this file now points to the
+new semantic vision tools and is no longer loaded into the agent by tool_registry.py.
 """
 
 from typing import Optional, List, Dict, Any, Union, Tuple
@@ -1195,8 +1202,16 @@ Provide specific, actionable insights about the content.
         logger.error(f"Image analysis failed: {e}")
         return f"❌ Error analyzing image: {e}"
 
-# List of all vision tools for easy import
-ALICE_VISION_TOOLS = [
+# ── Phase 3: ALICE_VISION_TOOLS now leads with semantic vision tools ──────────
+# Legacy tools below are kept for backward compatibility but are no longer
+# registered in the agent via tool_registry.py.
+try:
+    from alice_app_automation import semantic_click, semantic_type_into
+    _SEMANTIC_TOOLS = [semantic_click, semantic_type_into]
+except ImportError:
+    _SEMANTIC_TOOLS = []
+
+ALICE_VISION_TOOLS = _SEMANTIC_TOOLS + [
     scan_screen,
     click_on,
     type_text_here,
@@ -1207,11 +1222,11 @@ ALICE_VISION_TOOLS = [
     export_screen_data,
     read_text_from_image,
     read_screen_text,
-    smart_vision_analysis,        # NEW: Intelligent VLM/OCR routing
-    combined_vision_analysis,     # NEW: Comprehensive dual analysis
-    check_free_vlm_providers,     # NEW: Check free VLM status
-    analyze_with_free_vlm_only,   # NEW: Use only free VLMs
+    smart_vision_analysis,
+    combined_vision_analysis,
+    check_free_vlm_providers,
+    analyze_with_free_vlm_only,
     analyze_image_content,
     analyze_screen_with_gemini,
-    analyze_image_with_gemini
-]
+    analyze_image_with_gemini,
+]

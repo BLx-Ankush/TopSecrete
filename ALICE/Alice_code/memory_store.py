@@ -197,6 +197,89 @@ class ConversationMemory:
         except Exception as e:
             logger.error(f"Error searching memories: {e}")
             return []
+
+    # ── Phase 4: Domain 3B — Confidence Scoring & Conflict Resolution ──────────────
+
+    def search_with_conflict_check(
+        self, query: str, limit: int = 10
+    ) -> Dict:
+        """
+        Search memories and detect contradictions among results.
+
+        Returns a dict with:
+            'memories'       : List of raw memory dicts (sorted recency-first)
+            'conflict_report': List of conflict descriptions for ALICE to surface
+            'resolved'       : The highest-confidence (most recent) memories to use
+        """
+        raw = self.search_memories(query, limit=limit)
+        if not raw:
+            return {"memories": [], "conflict_report": [], "resolved": []}
+
+        # Sort by created_at descending so newest is first (recency weighting)
+        def _ts(m):
+            try:
+                return m.get("created_at", "") or ""
+            except Exception:
+                return ""
+        raw_sorted = sorted(raw, key=_ts, reverse=True)
+
+        conflicts = []
+        seen_topics: Dict[str, str] = {}  # topic_keyword -> first memory text
+
+        NEGATION_SIGNALS = [
+            ("like", "don't like"), ("like", "dislike"), ("prefer", "prefer not"),
+            ("yes", "no"), ("true", "false"), ("always", "never"),
+            ("love", "hate"), ("want", "don't want"),
+        ]
+
+        for mem in raw_sorted:
+            text = (mem.get("memory") or "").lower().strip()
+            if not text:
+                continue
+
+            # Extract a simple topic keyword (first meaningful noun-like word)
+            words = [w for w in text.split() if len(w) > 3]
+            topic = words[0] if words else text[:20]
+
+            if topic in seen_topics:
+                prev_text = seen_topics[topic]
+                # Check if the two memories contradict each other via negation signals
+                for (pos, neg) in NEGATION_SIGNALS:
+                    if (
+                        (pos in prev_text and neg in text) or
+                        (neg in prev_text and pos in text)
+                    ):
+                        conflicts.append({
+                            "topic": topic,
+                            "older_memory": prev_text,
+                            "newer_memory": text,
+                            "resolution": "newer",
+                            "message": (
+                                f"I have conflicting memories about '{topic}'. "
+                                f"Earlier I knew: '{prev_text[:60]}...', "
+                                f"but more recently: '{text[:60]}...'. "
+                                f"I'll go with the newer one, but let me know if that's wrong."
+                            )
+                        })
+                        break
+            else:
+                seen_topics[topic] = text
+
+        # 'resolved' = top half of sorted memories (newest, highest confidence)
+        resolved = raw_sorted[: max(1, len(raw_sorted) // 2)]
+
+        if conflicts:
+            logger.warning(
+                f"[ConflictResolver] {len(conflicts)} conflict(s) detected for query '{query}'"
+            )
+        else:
+            logger.info(f"[ConflictResolver] No conflicts found for query '{query}'")
+
+        return {
+            "memories": raw_sorted,
+            "conflict_report": conflicts,
+            "resolved": resolved,
+        }
     
     def get_all_memories(self) -> List[Dict]:
         """Get all memories for the user"""
