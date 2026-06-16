@@ -22,6 +22,14 @@ import logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# ── Hardened safe-execution layer (security hardening) ───────────────────────
+from alice_security import (
+    SecurityValidationError,
+    launch_app as _safe_launch_app,
+    launch_executable as _safe_launch_executable,
+    open_path_with as _safe_open_path_with,
+)
+
 class AdvancedSystemController:
     def __init__(self):
         self.temp_dir = Path.cwd() / "temp_alice_files"
@@ -95,61 +103,74 @@ class AdvancedSystemController:
         }
         
         app_lower = app_name.lower()
-        
-        # Method 1: Try exact match with multiple command variations
+
+        # Method 1: Try exact match with multiple command variations.
+        # SECURITY: every launch goes through the safe layer (shell=False /
+        # ShellExecute). The command tokens here are code-defined constants;
+        # they are launched by name/path with no shell command line.
         for key, commands in app_commands.items():
             if key == app_lower or app_lower in key or key in app_lower:
                 for command in commands:
                     try:
-                        if command.startswith("start "):
-                            # Use Windows start command
-                            subprocess.Popen(command, shell=True)
-                            return f"✅ {app_name} successfully opened via start command!"
-                        elif command.startswith("C:\\"):
-                            # Try specific path
+                        if command.startswith("C:\\"):
+                            # Specific path
                             if os.path.exists(command):
-                                subprocess.Popen([command], shell=False)
+                                _safe_launch_executable(command)
                                 return f"✅ {app_name} successfully opened from: {command}"
-                        elif ":" in command:
-                            # Protocol handler (like ms-teams:)
-                            subprocess.Popen(f'start "" "{command}"', shell=True)
+                        elif ":" in command and not command[1:2] == ":":
+                            # Protocol handler (like ms-teams:) — not a drive letter
+                            _safe_launch_app(command)
                             return f"✅ {app_name} opened via protocol: {command}"
                         else:
-                            # Try simple command
-                            subprocess.Popen(f'start "" "{command}"', shell=True)
+                            # Simple command/exe name — shell-free association launch
+                            _safe_launch_app(command)
                             return f"✅ {app_name} successfully opened!"
-                    except Exception as e:
+                    except SecurityValidationError as e:
+                        logger.warning(f"Blocked unsafe launch token '{command}': {e}")
                         continue
-        
-        # Method 2: Try Windows start command
+                    except Exception:
+                        continue
+
+        # Method 2: Try Windows association launch by the spoken app name.
+        # SECURITY: validated, shell-free (replaces `start "" "<app_name>"`).
         try:
-            subprocess.run(f'start "" "{app_name}"', shell=True, check=True, timeout=5)
+            _safe_launch_app(app_name)
             return f"✅ {app_name} opened via Windows start menu!"
-        except:
+        except SecurityValidationError as e:
+            logger.warning(f"Blocked unsafe app name '{app_name}': {e}")
+            return f"❌ '{app_name}' contains unsupported characters."
+        except Exception:
             pass
-        
-        # Method 3: Try PowerShell Get-Process to find running instances
+
+        # Method 3: Look for a running instance via PowerShell (read-only check).
+        # SECURITY: the app name is passed as a bound -Args parameter to the
+        # script, never string-concatenated into the command line, so it cannot
+        # break out of the PowerShell string literal.
         try:
-            result = subprocess.run(
-                f'powershell "Get-Process | Where-Object {{$_.ProcessName -like \'*{app_name}*\'}} | Select-Object -First 1"',
-                shell=True, capture_output=True, text=True, timeout=10
+            ps_script = (
+                "param($n) "
+                "$p = Get-Process | Where-Object {$_.ProcessName -like \"*$n*\"} | Select-Object -First 1; "
+                "if ($p) { Add-Type -AssemblyName Microsoft.VisualBasic; "
+                "[Microsoft.VisualBasic.Interaction]::AppActivate($p.Id); 'FOUND' }"
             )
-            if result.stdout.strip():
-                # If found running, try to bring to foreground
-                subprocess.run(f'powershell "Add-Type -AssemblyName Microsoft.VisualBasic; [Microsoft.VisualBasic.Interaction]::AppActivate(\'{app_name}\')"', shell=True)
+            result = subprocess.run(
+                ["powershell", "-NoProfile", "-Command", ps_script, "-n", app_name],
+                shell=False, capture_output=True, text=True, timeout=10
+            )
+            if "FOUND" in (result.stdout or ""):
                 return f"✅ {app_name} was already running - brought to foreground!"
-        except:
+        except Exception:
             pass
-        
+
         # Method 4: Try searching in common installation directories
         common_paths = [
             "C:\\Program Files",
-            "C:\\Program Files (x86)", 
+            "C:\\Program Files (x86)",
             os.path.expanduser("~\\AppData\\Local"),
             os.path.expanduser("~\\AppData\\Roaming"),
             "C:\\Windows\\System32"
         ]
-        
+
         for base_path in common_paths:
             try:
                 for root, dirs, files in os.walk(base_path):
@@ -157,9 +178,10 @@ class AdvancedSystemController:
                         if (app_lower in file.lower() or file.lower().startswith(app_lower)) and file.endswith('.exe'):
                             full_path = os.path.join(root, file)
                             try:
-                                subprocess.Popen([full_path], shell=True)
+                                # SECURITY: discovered path launched shell-free
+                                _safe_launch_executable(full_path)
                                 return f"✅ {app_name} found and opened from: {full_path}"
-                            except:
+                            except Exception:
                                 continue
                     # Limit search depth to avoid performance issues
                     if root.count(os.sep) - base_path.count(os.sep) > 2:
@@ -250,8 +272,11 @@ Additional research के लिए specific questions पूछें।
         with open(file_path, 'w', encoding='utf-8') as f:
             f.write(summary_content)
         
-        # Open in Notepad
-        subprocess.Popen(f'notepad.exe "{file_path}"', shell=True)
+        # Open in Notepad — SECURITY: shell-free, validated path (arg-list).
+        try:
+            _safe_open_path_with("notepad.exe", str(file_path))
+        except SecurityValidationError as e:
+            logger.warning(f"Blocked unsafe notepad open '{file_path}': {e}")
         
         return f"✅ **Research Complete!**\n\n🔍 Topic: {topic}\n📝 File: {filename}\n💾 Saved at: {file_path}\n\nNotepad में research summary open हो गई है! आप edit भी कर सकते हैं। 😊"
         
@@ -400,7 +425,7 @@ PowerPoint में import करके customize कर सकते हैं
         
         # Try to open PowerPoint
         try:
-            subprocess.Popen("powerpnt.exe", shell=True)
+            subprocess.Popen(["powerpnt.exe"], shell=False)
             return f"✅ **Presentation Created!**\n\n📊 Topic: {topic}\n📝 Outline saved: {filename}\n💻 PowerPoint opened\n\nOutline को PowerPoint में copy-paste करके professional slides बना सकते हैं! 🎯"
         except:
             return f"✅ **Presentation Outline Ready!**\n\n📊 Topic: {topic}\n📝 File: {filename}\n\nPowerPoint manually open करके outline use कर सकते हैं। File location: {file_path} 📋"

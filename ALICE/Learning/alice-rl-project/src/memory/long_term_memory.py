@@ -7,6 +7,22 @@ import pickle
 import json
 from datetime import datetime
 
+# ── Safe persistence (CWE-502 mitigation) ────────────────────────────────────
+# secure_save/secure_load add an HMAC signature so only files written by this
+# ALICE instance are ever deserialized; safe_torch_load defaults to
+# weights_only=True. Falls back gracefully if the helper isn't importable.
+try:
+    import sys as _sys, os as _os
+    _sys.path.insert(0, _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))))
+    from safe_persistence import (
+        secure_save, secure_load, safe_torch_load, safe_torch_save, IntegrityError
+    )
+    _SAFE_PERSIST = True
+except Exception:  # pragma: no cover
+    _SAFE_PERSIST = False
+    class IntegrityError(Exception):
+        ...
+
 class LongTermMemoryModule(nn.Module):
     """
     Sophisticated long-term memory system using LSTM and attention mechanisms.
@@ -205,25 +221,36 @@ class LongTermMemoryModule(nn.Module):
             return 0.5
     
     def save_memory(self, filepath: str):
-        """Save memory systems to disk."""
+        """Save memory systems to disk (signed for integrity)."""
         memory_data = {
             'episodic_buffer': self.episodic_buffer,
             'semantic_memory': self.semantic_memory,
             'model_state': self.state_dict()
         }
-        
-        with open(filepath, 'wb') as f:
-            pickle.dump(memory_data, f)
-    
+        if _SAFE_PERSIST:
+            secure_save(memory_data, filepath)
+        else:
+            with open(filepath, 'wb') as f:
+                pickle.dump(memory_data, f)
+
     def load_memory(self, filepath: str):
-        """Load memory systems from disk."""
+        """Load memory systems from disk.
+
+        SECURITY: verifies the file's HMAC signature before deserializing, so a
+        tampered or foreign memory file is refused (no arbitrary-code execution).
+        """
         try:
-            with open(filepath, 'rb') as f:
-                memory_data = pickle.load(f)
-            
+            if _SAFE_PERSIST:
+                memory_data = secure_load(filepath)
+            else:
+                with open(filepath, 'rb') as f:
+                    memory_data = pickle.load(f)
+
             self.episodic_buffer = memory_data['episodic_buffer']
             self.semantic_memory = memory_data['semantic_memory']
             self.load_state_dict(memory_data['model_state'])
+        except IntegrityError as e:
+            print(f"SECURITY: refused to load memory file: {e}")
         except Exception as e:
             print(f"Error loading memory: {e}")
 
@@ -347,8 +374,8 @@ class TransferLearningManager:
         torch.save(state, filepath)
     
     def load_transfer_state(self, filepath: str):
-        """Load transfer learning state."""
-        state = torch.load(filepath)
+        """Load transfer learning state (weights-only, integrity-checked)."""
+        state = safe_torch_load(filepath) if _SAFE_PERSIST else torch.load(filepath, weights_only=True)
         self.base_model.load_state_dict(state['base_model'])
         
         for name, head_state in state['task_heads'].items():

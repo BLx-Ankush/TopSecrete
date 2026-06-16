@@ -219,6 +219,22 @@ class GeminiStreamingClient:
                 f"[PLAN ALPHA] Registered {len(self._tool_dispatch)} tools with streaming client: "
                 f"{list(self._tool_dispatch.keys())}"
             )
+
+        # ── SECURITY: tool-execution gate (Layer 1) ─────────────────────────
+        # Validates arguments, classifies tool risk, and seeks approval for
+        # SENSITIVE/DANGEROUS tools before anything executes. `approval_callback`
+        # may be set later by the agent (an async fn that asks the user a yes/no
+        # question via the voice session). Until then the dispatcher applies a
+        # fail-safe policy (deny dangerous, allow validated sensitive).
+        try:
+            from secure_dispatch import SecureDispatcher
+            self.approval_callback = None
+            self._secure_dispatcher = SecureDispatcher(ask_callback=None)
+            logger.info("[SECURITY] SecureDispatcher gate active for tool execution")
+        except Exception as e:
+            self.approval_callback = None
+            self._secure_dispatcher = None
+            logger.error(f"[SECURITY] Failed to init SecureDispatcher: {e}")
         
         # Connection state
         self.state = ConnectionState.DISCONNECTED
@@ -538,6 +554,35 @@ class GeminiStreamingClient:
                          f"Available: {list(self._tool_dispatch.keys())}")
             result_payload = {"error": f"Tool '{name}' is not registered"}
         else:
+            # ── SECURITY GATE (Layer 1) ──────────────────────────────────────
+            # Validate arguments + obtain approval for sensitive/dangerous tools
+            # BEFORE executing. A prompt-injection payload that makes the model
+            # call a destructive tool is stopped here.
+            if self._secure_dispatcher is not None:
+                try:
+                    # Pick up an approval callback if the agent has provided one.
+                    if getattr(self, "approval_callback", None) is not None:
+                        self._secure_dispatcher.ask_callback = self.approval_callback
+                    allowed, gate_reason = await self._secure_dispatcher.authorize(name, args)
+                except Exception as gate_err:
+                    logger.error(f"[SECURITY] gate error for '{name}': {gate_err}")
+                    # Fail safe: do not execute if the gate itself errored.
+                    allowed, gate_reason = False, "Security check could not complete."
+                if not allowed:
+                    logger.warning(f"[SECURITY] BLOCKED tool '{name}': {gate_reason}")
+                    response_msg = {
+                        "tool_response": {
+                            "function_responses": [
+                                {"name": name, "response": {"error": gate_reason}}
+                            ]
+                        }
+                    }
+                    try:
+                        await self._send_message(response_msg)
+                    except Exception as e:
+                        logger.error(f"[SECURITY] failed to send block response for '{name}': {e}")
+                    return
+
             try:
                 if inspect.iscoroutinefunction(target_func):
                     result = await target_func(**args)

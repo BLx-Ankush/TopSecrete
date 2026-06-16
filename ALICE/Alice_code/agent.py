@@ -691,6 +691,15 @@ class Assistant(Agent):
         self.streaming_client.on_connection_state_change = self._handle_connection_state_change
         self.streaming_client.on_error = self._handle_streaming_error
 
+        # ── SECURITY: provide the tool-execution gate a voice approval channel ─
+        # The SecureDispatcher (Layer 1) calls this to confirm SENSITIVE/
+        # DANGEROUS tool calls with the user before they run. We speak the
+        # confirmation request through the active session. Until full voice
+        # yes/no capture is wired, dangerous actions require an explicit spoken
+        # confirmation phrase tracked via self._pending_approval; everything
+        # validated and non-dangerous proceeds (and is audit-logged).
+        self.streaming_client.approval_callback = self._approve_tool_action
+
         # Store references for tool execution and memory
         self.tools_list = tools_list
         self.chat_ctx = chat_ctx
@@ -1587,6 +1596,49 @@ class Assistant(Agent):
             except Exception as e:
                 logger.error(f"Error notifying session of streaming error: {e}")
     
+    async def _approve_tool_action(self, question: str) -> bool:
+        """
+        Voice approval channel for the SecureDispatcher tool-execution gate.
+
+        Speaks the confirmation request to the user and decides whether a
+        SENSITIVE/DANGEROUS tool call may proceed. This is the human-in-the-loop
+        control that production agents use to resist prompt injection.
+
+        Current policy (conservative, non-blocking for the audio loop):
+          - Always SPEAK the confirmation so the user is aware of the action.
+          - If the user has armed a standing approval for this turn
+            (`self._approvals_armed`), allow it.
+          - Otherwise default-deny dangerous actions and let the user retry with
+            an explicit "yes, go ahead" — which the agent sets via
+            `arm_tool_approval()` (hooked from the transcript handler).
+
+        Returning True allows the action; False blocks it.
+        """
+        try:
+            if self.current_session:
+                await self.current_session.generate_reply(
+                    instructions=f"Briefly tell the user: {question}",
+                    use_tools=False,
+                )
+        except Exception as e:
+            logger.error(f"[SECURITY] Failed to voice approval request: {e}")
+        # Honour a standing approval the user armed for this turn.
+        armed = getattr(self, "_approvals_armed", False)
+        if armed:
+            logger.info("[SECURITY] Tool action approved via armed standing approval")
+            return True
+        logger.warning("[SECURITY] Tool action awaiting explicit user approval — holding off")
+        return False
+
+    def arm_tool_approval(self, armed: bool = True):
+        """Arm/disarm standing approval for sensitive/dangerous tool calls.
+
+        Hook this from the user-transcript handler: when the user clearly says
+        an affirmative like 'yes, go ahead' / 'haan kar do', call
+        arm_tool_approval(True); reset to False at the start of each new request.
+        """
+        self._approvals_armed = armed
+
     def set_session(self, session):
         """
         Set the LiveKit session reference for audio playback.
