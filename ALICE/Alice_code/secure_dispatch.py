@@ -100,6 +100,10 @@ DEFAULT_RISK = RiskLevel.SENSITIVE
 
 # Which argument names, per validator, to check when present. The validators
 # raise SecurityValidationError on bad input.
+#
+# NOTE on `filename`: across ALICE's tools it always denotes a file PATH
+# (create_file_and_open, capture_screenshot, create_and_research), never a
+# loose search term — so it is validated as a path. Search tools use `query`.
 _ARG_VALIDATORS = {
     "app_name": "app_name",
     "app": "app_name",
@@ -110,8 +114,8 @@ _ARG_VALIDATORS = {
     "file_path": "path",
     "path": "path",
     "location": "path",
+    "filename": "path",
     "query": "search_query",
-    "filename": "search_query",
 }
 
 # An async callable that speaks a yes/no question and returns the user's answer.
