@@ -19,6 +19,14 @@ except ImportError:
 
 from langchain.tools import tool
 
+# ── Hardened safe-execution layer (security hardening) ───────────────────────
+from alice_security import (
+    SecurityValidationError,
+    launch_app as _safe_launch_app,
+    launch_executable as _safe_launch_executable,
+    launch_protocol as _safe_launch_protocol,
+)
+
 # Setup encoding and logger
 sys.stdout.reconfigure(encoding='utf-8')
 logging.basicConfig(level=logging.INFO)
@@ -141,7 +149,20 @@ async def open_app(app_title: str) -> str:
     app_title = app_title.lower().strip()
     app_command = APP_MAPPINGS.get(app_title, app_title)
     try:
-        await asyncio.create_subprocess_shell(f'start "" "{app_command}"', shell=True)
+        # SECURITY: shell-free launch (replaces `start "" "<app_command>"`).
+        # Resolves a mapped path, an ms-settings: protocol, or a bare name via
+        # OS association — never a shell command line.
+        try:
+            if app_command.startswith("start ms-settings:"):
+                _safe_launch_protocol("ms-settings:")
+            elif app_command.lower().endswith(".exe") and os.path.exists(app_command):
+                _safe_launch_executable(app_command)
+            else:
+                _safe_launch_app(app_command)
+        except SecurityValidationError as sec_err:
+            logger.warning(f"Blocked unsafe app launch '{app_title}': {sec_err}")
+            return f"❌ '{app_title}' में unsupported characters हैं।"
+
         focused = await focus_window(app_title)
         if focused:
             return f"🚀 App launch हुआ और focus में है: {app_title}."

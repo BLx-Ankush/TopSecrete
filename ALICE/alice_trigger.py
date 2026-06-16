@@ -1,20 +1,76 @@
 """
-Alice Security Trigger - 4-Digit Code Authentication
-Secure launcher that requires a 4-digit code before starting Alice
+Alice Security Trigger - Hashed Code Authentication
+Secure launcher that requires a code before starting Alice.
+
+SECURITY: the launch code is NOT stored in source. It is provided as a
+SHA-256 hash via the ALICE_LAUNCH_CODE_HASH environment variable (or a local
+.alice_launch.hash file). On first run, if neither is set, the user is guided
+to create one. Comparison is constant-time.
 """
 
 import os
 import sys
 import subprocess
 import getpass
+import hashlib
+import hmac
+from pathlib import Path
 from datetime import datetime
 
-# Set your 4-digit security code here
-SECURITY_CODE = "0007"  # Change this to your preferred 4-digit code
+# Where a locally-set code hash is stored if the user doesn't use the env var.
+_HASH_FILE = Path(__file__).resolve().parent / ".alice_launch.hash"
+
+
+def _hash_code(code: str) -> str:
+    """SHA-256 hex digest of the code (with a fixed app salt)."""
+    return hashlib.sha256(("alice-launch:" + code).encode("utf-8")).hexdigest()
+
+
+def _get_expected_hash() -> str | None:
+    """Return the configured launch-code hash, or None if not set up yet."""
+    env = os.getenv("ALICE_LAUNCH_CODE_HASH")
+    if env:
+        return env.strip()
+    try:
+        if _HASH_FILE.exists():
+            return _HASH_FILE.read_text(encoding="utf-8").strip()
+    except Exception:
+        pass
+    return None
+
+
+def _first_run_setup() -> str | None:
+    """Guide the user to create a launch code on first run; returns its hash."""
+    print("🔐 No launch code configured yet. Let's set one up (stored hashed).")
+    try:
+        code1 = getpass.getpass("🔑 Choose a launch code (min 4 chars): ").strip()
+        if len(code1) < 4:
+            print("❌ Code too short. Aborting setup.")
+            return None
+        code2 = getpass.getpass("🔁 Re-enter to confirm: ").strip()
+        if code1 != code2:
+            print("❌ Codes did not match. Aborting setup.")
+            return None
+        h = _hash_code(code1)
+        try:
+            _HASH_FILE.write_text(h, encoding="utf-8")
+            try:
+                os.chmod(_HASH_FILE, 0o600)
+            except Exception:
+                pass
+            print(f"✅ Launch code saved (hash only) to {_HASH_FILE.name}")
+        except Exception as e:
+            print(f"⚠️ Could not persist hash ({e}). Set ALICE_LAUNCH_CODE_HASH instead:")
+            print(f"   {h}")
+        return h
+    except KeyboardInterrupt:
+        print("\n❌ Setup cancelled.")
+        return None
 
 def clear_screen():
     """Clear the terminal screen"""
-    os.system('cls' if os.name == 'nt' else 'clear')
+    # SECURITY: fixed arguments, shell-free.
+    subprocess.run(["cls" if os.name == "nt" else "clear"], shell=False, check=False)
 
 def print_alice_banner():
     """Display Alice startup banner"""
@@ -30,10 +86,10 @@ def print_alice_banner():
     print("=" * 60)
 
 def get_secure_code():
-    """Get 4-digit code from user with hidden input"""
+    """Get the launch code from user with hidden input"""
     try:
         # Use getpass for hidden input (like password entry)
-        code = getpass.getpass("🔑 Enter 4-digit security code: ")
+        code = getpass.getpass("🔑 Enter launch code: ")
         return code.strip()
     except KeyboardInterrupt:
         print("\n❌ Authentication cancelled by user")
@@ -42,18 +98,14 @@ def get_secure_code():
         print(f"\n❌ Input error: {e}")
         return None
 
-def validate_code(entered_code):
-    """Validate the entered 4-digit code"""
-    if len(entered_code) != 4:
-        return False, "Code must be exactly 4 digits"
-    
-    if not entered_code.isdigit():
-        return False, "Code must contain only numbers"
-    
-    if entered_code != SECURITY_CODE:
-        return False, "Invalid security code"
-    
-    return True, "Code validated successfully"
+def validate_code(entered_code, expected_hash):
+    """Validate the entered code against the configured hash (constant-time)."""
+    if not entered_code:
+        return False, "Code cannot be empty"
+
+    if hmac.compare_digest(_hash_code(entered_code), expected_hash):
+        return True, "Code validated successfully"
+    return False, "Invalid security code"
 
 def resolve_python_exe():
     """Find the best Python executable to run Alice agent"""
@@ -237,27 +289,37 @@ def main():
     """Main security launcher function"""
     max_attempts = 3
     attempts = 0
-    
+
     clear_screen()
-    
+
+    # SECURITY: load the configured launch-code hash; guide first-run setup.
+    expected_hash = _get_expected_hash()
+    if not expected_hash:
+        print_alice_banner()
+        expected_hash = _first_run_setup()
+        if not expected_hash:
+            print("❌ No launch code configured. Exiting.")
+            sys.exit(1)
+        clear_screen()
+
     while attempts < max_attempts:
         print_alice_banner()
-        
+
         if attempts > 0:
             remaining = max_attempts - attempts
             print(f"⚠️  Attempts remaining: {remaining}")
             print()
-        
+
         # Get security code from user
         entered_code = get_secure_code()
-        
+
         if entered_code is None:
             attempts += 1
             clear_screen()
             continue
-        
+
         # Validate the code
-        is_valid, message = validate_code(entered_code)
+        is_valid, message = validate_code(entered_code, expected_hash)
         
         if is_valid:
             print(f"\n✅ {message}")

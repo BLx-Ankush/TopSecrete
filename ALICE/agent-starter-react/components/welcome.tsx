@@ -174,7 +174,7 @@ export const Welcome = ({
         };
 
         // Fluorescent color palette
-        const fluorescentColors = {
+        const fluorescentColors: Record<string, number> = {
           cyan: 0x00ffff,
           lime: 0x00ff00,
           magenta: 0xff00ff,

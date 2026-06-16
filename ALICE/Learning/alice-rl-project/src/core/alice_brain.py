@@ -576,9 +576,12 @@ class AliceBrain:
         """Load complete ALICE brain."""
         
         # Load main network
+        # SECURITY (CWE-502): weights_only=True prevents arbitrary code
+        # execution from a crafted/tampered checkpoint during unpickling.
         checkpoint = torch.load(
             os.path.join(directory, 'alice_brain.pt'),
-            map_location=self.device
+            map_location=self.device,
+            weights_only=True
         )
         self.actor_critic.load_state_dict(checkpoint['actor_critic'])
         self.actor_optimizer.load_state_dict(checkpoint['actor_optimizer'])
@@ -586,12 +589,13 @@ class AliceBrain:
         self.episode_count = checkpoint['episode_count']
         self.total_steps = checkpoint['total_steps']
         self.training_stats = checkpoint['training_stats']
-        
+
         # Load subsystems
         if self.memory and os.path.exists(os.path.join(directory, 'memory.pt')):
             self.memory.load_state_dict(torch.load(
                 os.path.join(directory, 'memory.pt'),
-                map_location=self.device
+                map_location=self.device,
+                weights_only=True
             ))
         
         if self.nlp and os.path.exists(os.path.join(directory, 'nlp.pt')):

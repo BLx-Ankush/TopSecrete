@@ -596,7 +596,7 @@ class PersonalityEmotionSystem:
     
     def load_models(self, filepath: str):
         """Load emotion and personality models."""
-        checkpoint = torch.load(filepath, map_location=self.device)
+        checkpoint = torch.load(filepath, map_location=self.device, weights_only=True)  # SECURITY: CWE-502
         self.emotion_recognizer.load_state_dict(checkpoint['emotion_recognizer'])
         self.emotion_dynamics.load_state_dict(checkpoint['emotion_dynamics'])
         self.personality_model.load_state_dict(checkpoint['personality_model'])

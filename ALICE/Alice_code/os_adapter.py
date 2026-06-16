@@ -33,6 +33,18 @@ from typing import Dict, Optional, List
 
 logger = logging.getLogger(__name__)
 
+# ── Hardened safe-execution layer (security hardening) ───────────────────────
+try:
+    from alice_security import (
+        SecurityValidationError,
+        validate_app_name as _validate_app_name,
+    )
+except Exception:  # pragma: no cover - keep adapter importable in isolation
+    class SecurityValidationError(Exception):
+        ...
+    def _validate_app_name(x):
+        return x
+
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 # Base Interface
@@ -141,10 +153,18 @@ class WindowsAdapter(BaseOSAdapter):
             asyncio.get_event_loop().run_until_complete(_open_app.acall({"app_name": app_name}))
             return True
         except Exception:
-            # Fallback: start directly
+            # Fallback: start directly (SECURITY: shell-free, validated name)
             try:
-                subprocess.Popen(["start", app_name], shell=True)
+                safe_name = _validate_app_name(app_name)
+                import os as _os
+                if hasattr(_os, "startfile"):
+                    _os.startfile(safe_name)  # type: ignore[attr-defined]
+                else:
+                    subprocess.Popen([safe_name], shell=False)
                 return True
+            except SecurityValidationError as e:
+                logger.warning(f"[WindowsAdapter] blocked unsafe app name: {e}")
+                return False
             except Exception as e:
                 logger.error(f"[WindowsAdapter] launch_app failed: {e}")
                 return False
@@ -249,7 +269,12 @@ class MacOSAdapter(BaseOSAdapter):
 
     def launch_app(self, app_name: str) -> bool:
         try:
-            subprocess.Popen(["open", "-a", app_name]); return True
+            # SECURITY: `open -a` takes the name as a discrete argv entry (no
+            # shell, no AppleScript eval). Validate to reject control chars.
+            safe_name = _validate_app_name(app_name)
+            subprocess.Popen(["open", "-a", safe_name]); return True
+        except SecurityValidationError as e:
+            logger.warning(f"[MacOSAdapter] blocked unsafe app name: {e}"); return False
         except Exception as e:
             logger.error(f"[MacOSAdapter] launch_app: {e}"); return False
 
@@ -258,8 +283,14 @@ class MacOSAdapter(BaseOSAdapter):
 
     def focus_window(self, window_title: str) -> bool:
         try:
-            subprocess.run(["osascript", "-e", f'tell application "{window_title}" to activate'])
+            # SECURITY: window_title is interpolated into an AppleScript string,
+            # so validate it (rejects quotes/newlines that could break out of
+            # the string literal and inject AppleScript).
+            safe_title = _validate_app_name(window_title)
+            subprocess.run(["osascript", "-e", f'tell application "{safe_title}" to activate'])
             return True
+        except SecurityValidationError as e:
+            logger.warning(f"[MacOSAdapter] blocked unsafe window title: {e}"); return False
         except Exception as e:
             logger.error(f"[MacOSAdapter] focus_window: {e}"); return False
 

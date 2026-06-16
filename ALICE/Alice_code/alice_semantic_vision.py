@@ -184,8 +184,10 @@ class SemanticVisionEngine:
             # Grab the cropped region (or full screen if no active window found)
             img: Image.Image = ImageGrab.grab(bbox=bbox)
 
-            # 1A: Compute pixel hash on the ORIGINAL resolution image
-            pixel_hash = hashlib.md5(img.tobytes()).hexdigest()
+            # 1A: Compute pixel hash on the ORIGINAL resolution image.
+            # SECURITY (CWE-327): SHA-256 instead of MD5. This is a cache/dedup
+            # key only; switching invalidates prior in-memory keys harmlessly.
+            pixel_hash = hashlib.sha256(img.tobytes()).hexdigest()
 
             # Downscale for Gemini (reduces token cost)
             if scale != 1.0:

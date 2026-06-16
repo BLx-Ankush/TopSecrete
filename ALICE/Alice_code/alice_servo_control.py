@@ -16,7 +16,10 @@ def _pi_config() -> tuple[str, str, str]:
 
     This avoids stale defaults if env vars change after import.
     """
-    pi_ip = os.getenv("ALICE_PI_IP", "10.183.22.127").strip()
+    # SECURITY/CONFIG: no hardcoded device IP. Configure ALICE_PI_IP in the
+    # environment; default to localhost so a misconfig fails safe locally
+    # rather than reaching out to a stale hardcoded LAN address.
+    pi_ip = os.getenv("ALICE_PI_IP", "127.0.0.1").strip()
     pi_port = os.getenv("ALICE_PI_PORT", "5000").strip()
     ultrasonic_path = os.getenv("ALICE_PI_ULTRASONIC_PATH", "/ultrasonic").strip() or "/ultrasonic"
     if not ultrasonic_path.startswith("/"):

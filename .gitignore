@@ -190,3 +190,28 @@ uploads/
 !**/package.json
 !pnpm-lock.yaml
 !**/pnpm-lock.yaml
+
+# ──────────────────────────────────────────────────────────
+# 🔐 SECURITY HARDENING — local secrets & generated artifacts
+# (added during production security hardening)
+# ──────────────────────────────────────────────────────────
+# Machine-local HMAC / launch-code material — NEVER commit
+**/.alice_rl_hmac.key
+**/.alice_launch.hash
+*.sig
+
+# Per-tool audit log (may contain action arguments)
+**/alice_tool_audit.log
+
+# Security manifest is user-specific runtime state
+**/security_manifest.json
+
+# Model/checkpoint blobs (large, may be machine-specific)
+*.pt
+*.pth
+*.pkl
+*.ckpt
+*.safetensors
+
+# Node lockfile we are migrating away from (npm is canonical)
+# (kept ignorable; remove the stale file from the tree separately)

@@ -493,7 +493,7 @@ class NLPPipeline:
     
     def load_model(self, filepath: str):
         """Load NLP models."""
-        checkpoint = torch.load(filepath)
+        checkpoint = torch.load(filepath, weights_only=True)  # SECURITY: CWE-502 mitigation
         self.language_model.load_state_dict(checkpoint['language_model'])
         self.intent_classifier.load_state_dict(checkpoint['intent_classifier'])
 
