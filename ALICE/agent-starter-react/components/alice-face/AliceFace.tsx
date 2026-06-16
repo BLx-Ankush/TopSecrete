@@ -14,7 +14,7 @@ export function AliceFace({ className }: AliceFaceProps) {
   const { state, audioTrack } = useVoiceAssistant();
   const [emotion, setEmotion] = useState<Emotion>('idle');
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const animationRef = useRef<number>();
+  const animationRef = useRef<number | undefined>(undefined);
 
   // Map agent state to emotions
   useEffect(() => {

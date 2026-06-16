@@ -226,10 +226,10 @@ def _enhance_for_charts(image: Any) -> Any:
 # === CACHING UTILITIES ===
 
 def _get_image_hash(image_path: str) -> str:
-    """Generate hash of image for caching"""
+    """Generate hash of image for caching (SHA-256; CWE-327 — no weak MD5)."""
     try:
         with open(image_path, 'rb') as f:
-            return hashlib.md5(f.read()).hexdigest()
+            return hashlib.sha256(f.read()).hexdigest()
     except Exception:
         return str(time.time())
 

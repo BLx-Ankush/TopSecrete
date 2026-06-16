@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { Room, RoomEvent } from 'livekit-client';
+import { DisconnectReason, Room, RoomEvent } from 'livekit-client';
 import { motion } from 'motion/react';
 import { RoomAudioRenderer, RoomContext, StartAudio } from '@livekit/components-react';
 import { toastAlert } from '@/components/alert-toast';
@@ -30,12 +30,12 @@ export function App({ appConfig }: AppProps) {
     useConnectionDetails(appConfig);
 
   useEffect(() => {
-    const onDisconnected = (reason?: import('livekit-client').DisconnectReason) => {
+    const onDisconnected = (reason?: DisconnectReason) => {
       console.log('Room disconnected. Reason:', reason);
       setSessionStarted(false);
-      
-      // Only attempt to reconnect if it wasn't a manual disconnect
-      if (reason !== 'manual') {
+
+      // Only attempt to reconnect if it wasn't a manual/client-initiated disconnect
+      if (reason !== DisconnectReason.CLIENT_INITIATED) {
         console.log('Attempting to refresh connection details...');
         setTimeout(() => {
           refreshConnectionDetails().catch(error => {
@@ -61,27 +61,17 @@ export function App({ appConfig }: AppProps) {
     const onConnecting = () => {
       console.log('Room connecting...');
     };
-    const onConnectionError = (error: Error) => {
-      console.error('Room connection error:', error);
-      setSessionStarted(false);
-      toastAlert({
-        title: 'Connection Error',
-        description: `Failed to connect to the room: ${error.message}`,
-      });
-    };
-    
+
     room.on(RoomEvent.Connected, onConnected);
     room.on(RoomEvent.SignalConnected, onConnecting);
     room.on(RoomEvent.MediaDevicesError, onMediaDevicesError);
     room.on(RoomEvent.Disconnected, onDisconnected);
-    room.on(RoomEvent.ConnectionError, onConnectionError);
-    
+
     return () => {
       room.off(RoomEvent.Connected, onConnected);
       room.off(RoomEvent.SignalConnected, onConnecting);
       room.off(RoomEvent.Disconnected, onDisconnected);
       room.off(RoomEvent.MediaDevicesError, onMediaDevicesError);
-      room.off(RoomEvent.ConnectionError, onConnectionError);
     };
   }, [room, refreshConnectionDetails]);
 
@@ -113,7 +103,6 @@ export function App({ appConfig }: AppProps) {
           return room.connect(connectionDetails.serverUrl, connectionDetails.participantToken, {
             autoSubscribe: true,
             maxRetries: 3,
-            retryDelayMs: 1000,
           });
         }),
       ])

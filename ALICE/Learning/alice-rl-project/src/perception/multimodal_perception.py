@@ -515,7 +515,7 @@ class PerceptionSystem:
     
     def load_models(self, filepath: str):
         """Load perception models."""
-        checkpoint = torch.load(filepath, map_location=self.device)
+        checkpoint = torch.load(filepath, map_location=self.device, weights_only=True)  # SECURITY: CWE-502
         self.vision_encoder.load_state_dict(checkpoint['vision_encoder'])
         self.audio_encoder.load_state_dict(checkpoint['audio_encoder'])
         self.proprioceptive_encoder.load_state_dict(checkpoint['proprioceptive_encoder'])

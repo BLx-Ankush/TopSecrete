@@ -13,7 +13,9 @@ export function ChatInput({ onSend, className, disabled, ...props }: ChatInputPr
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    props.onSubmit?.(e);
+    // React 19 types `onSubmit` as a SubmitEvent handler; the runtime event is
+    // the same object, so forward it through a compatible cast.
+    props.onSubmit?.(e as Parameters<NonNullable<typeof props.onSubmit>>[0]);
     onSend?.(message);
     setMessage('');
   };

@@ -16,9 +16,10 @@ import logging
 # Set UTF-8 encoding for Windows console to handle emojis
 if os.name == 'nt':
     try:
-        # Try to set console to UTF-8
-        os.system('chcp 65001 > nul')
-    except:
+        # SECURITY: fixed arguments, shell-free (replaces os.system('chcp ...')).
+        subprocess.run(["chcp", "65001"], shell=False,
+                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False)
+    except Exception:
         pass
 
 # Configure logging with UTF-8 encoding support
@@ -30,6 +31,20 @@ logging.basicConfig(
     ]
 )
 logger = logging.getLogger(__name__)
+
+# ── Hardened safe-execution layer (Phase 1/2 security hardening) ──────────────
+# All OS launches/file-opens/searches that previously used shell=True with
+# interpolated user input are routed through alice_security, which validates
+# input and executes with shell=False / OS APIs (no shell command line).
+from alice_security import (
+    SecurityValidationError,
+    launch_app as _safe_launch_app,
+    launch_executable as _safe_launch_executable,
+    open_path_with as _safe_open_path_with,
+    open_url as _safe_open_url,
+    launch_protocol as _safe_launch_protocol,
+    search_files as _safe_search_files,
+)
 
 # Global variables
 PERSONAL_MODE_ENABLED = True  # Enable by default for better user experience
@@ -532,9 +547,10 @@ async def open_application(app_name: str) -> str:
             # Check for Windows Store WhatsApp installation
             try:
                 import subprocess
+                # SECURITY: static command, shell=False arg-list (no shell).
                 result = subprocess.run(
-                    'powershell.exe -Command "Get-AppxPackage *WhatsApp*"', 
-                    shell=True, capture_output=True, text=True, encoding='utf-8', errors='ignore', timeout=5
+                    ['powershell.exe', '-Command', 'Get-AppxPackage *WhatsApp*'],
+                    shell=False, capture_output=True, text=True, encoding='utf-8', errors='ignore', timeout=5
                 )
                 if "5319275A.WhatsAppDesktop" in result.stdout:
                     logger.info("Found WhatsApp Store app installed")
@@ -603,34 +619,17 @@ async def open_application(app_name: str) -> str:
         # Method 3: If we have a path, try to launch it
         if exe_path and matched_name:
             try:
-                import subprocess  # Ensure subprocess is available in this scope
-                # Enhanced opening methods with better Windows compatibility
+                # SECURITY: launch the resolved executable via the hardened
+                # safe-execution layer (shell=False / ShellExecute). No user
+                # string is ever interpolated into a shell command line.
                 success = False
-                
-                # Method A: Use Windows start command with proper escaping
-                if not success:
-                    try:
-                        subprocess.run(f'start "" "{exe_path}"', shell=True, check=True, timeout=10)
-                        success = True
-                    except:
-                        pass
-                
-                # Method B: Direct executable launch if file exists
-                if not success and os.path.exists(exe_path):
-                    try:
-                        subprocess.Popen([exe_path], shell=False)
-                        success = True
-                    except:
-                        pass
-                
-                # Method C: Try with shell=True
-                if not success:
-                    try:
-                        subprocess.Popen(exe_path, shell=True)
-                        success = True
-                    except:
-                        pass
-                
+                try:
+                    _safe_launch_executable(exe_path)
+                    success = True
+                except SecurityValidationError as sec_err:
+                    logger.warning(f"Blocked unsafe launch of '{exe_path}': {sec_err}")
+                    success = False
+
                 if success:
                     return f"""✅ **{app_name.title()} Successfully Opened!**
 
@@ -645,55 +644,44 @@ async def open_application(app_name: str) -> str:
                 return f"⏰ {app_name} opening... (timeout हुआ लेकिन process start हो गया होगा)"
             except Exception as launch_error:
                 logger.error(f"Launch error for {app_name}: {launch_error}")
-                # Fallback to Windows start command with app name
+                # SECURITY: shell-free fallback. os.startfile/association resolves
+                # the name the same way `start "<name>"` did, with no shell.
                 try:
-                    subprocess.run(f'start "" "{app_name}"', shell=True, check=True, timeout=5)
+                    _safe_launch_app(app_name, app_database=APP_DATABASE)
                     return f"✅ {app_name} opened via Windows fallback! 🎯"
-                except:
+                except SecurityValidationError as sec_err:
+                    logger.warning(f"Blocked unsafe app launch '{app_name}': {sec_err}")
+                    return f"❌ '{app_name}' contains unsupported characters."
+                except Exception:
                     return f"❌ {app_name} launch failed: {str(launch_error)}"
-        
-        # Method 4: Enhanced fallback methods
-        fallback_methods = [
-            f'powershell.exe -Command "Start-Process \\"{app_name}\\""',  # PowerShell start
-            f'cmd.exe /c start /B \\"{app_name}\\"',  # CMD start
-            f'start \\"{app_name}\\"',  # Windows start menu search
-            f'start \\"{app_lower}\\"',  # Lowercase version
-            f'powershell.exe -Command "Start-Process \\"{app_name}.exe\\""',  # PowerShell with exe
-        ]
-        
-        # Special WhatsApp store app fallback
+
+        # Method 4: Enhanced fallback — shell-free bare-name / protocol launch.
+        # SECURITY: replaces the previous list of interpolated PowerShell/cmd/
+        # start command strings. A single validated os.startfile call covers all
+        # of them (Windows resolves the name via app associations) with no shell.
+
+        # Special WhatsApp store app fallback (protocol launch, no shell)
         if app_lower in ["whatsapp", "whatsapp desktop"]:
-            # Try WhatsApp-specific methods first (using Python for reliability)
             try:
-                import webbrowser
-                webbrowser.open('whatsapp:')
+                _safe_launch_protocol('whatsapp:')
                 return f"✅ WhatsApp opened successfully! 🚀"
             except Exception as e:
                 logger.debug(f"WhatsApp protocol failed: {e}")
-            
-            # Fallback methods
-            whatsapp_methods = [
-                'start whatsapp:',  # WhatsApp protocol via CMD
-                'start ms-windows-store://pdp/?ProductId=9NKSQGP7F2NH',  # WhatsApp Store page
-            ]
-            
-            for method in whatsapp_methods:
-                try:
-                    import subprocess
-                    subprocess.run(method, shell=True, check=False, timeout=5)
-                    return f"✅ WhatsApp opened via Windows! 🚀"
-                except Exception as e:
-                    logger.debug(f"WhatsApp method failed: {method} - {e}")
-                    continue
-        
-        # Try each fallback method
-        for method in fallback_methods:
             try:
-                import subprocess
-                subprocess.run(method, shell=True, check=True, timeout=5)
-                return f"✅ {app_name} opened via Windows search! ✨"
-            except:
-                continue
+                _safe_launch_protocol('ms-windows-store://pdp/?ProductId=9NKSQGP7F2NH')
+                return f"✅ WhatsApp opened via Store! 🚀"
+            except Exception as e:
+                logger.debug(f"WhatsApp store launch failed: {e}")
+
+        # Generic shell-free bare-name launch
+        try:
+            _safe_launch_app(app_name, app_database=APP_DATABASE)
+            return f"✅ {app_name} opened via Windows search! ✨"
+        except SecurityValidationError as sec_err:
+            logger.warning(f"Blocked unsafe app launch '{app_name}': {sec_err}")
+            return f"❌ '{app_name}' contains unsupported characters and was not launched."
+        except Exception as e:
+            logger.debug(f"Bare-name launch failed for {app_name}: {e}")
         
         # Method 5: Try to search for the app in registry and common locations
         try:
@@ -877,16 +865,22 @@ async def create_file_and_open(filename: str, content: str = "", app: str = "not
         with open(file_path, 'w', encoding='utf-8') as f:
             f.write(content)
         
-        # Open file with specified app
-        if app.lower() == "notepad":
-            subprocess.Popen(f'notepad.exe "{file_path}"', shell=True)
-        elif app.lower() == "word":
-            subprocess.Popen(f'winword.exe "{file_path}"', shell=True)
-        elif app.lower() == "excel":
-            subprocess.Popen(f'excel.exe "{file_path}"', shell=True)
-        else:
-            # Try default app
-            subprocess.Popen(f'start "" "{file_path}"', shell=True)
+        # Open file with specified app — SECURITY: shell-free, validated path.
+        # The opener is a fixed program name; the path is passed as a separate
+        # argv entry (open_path_with) or via ShellExecute (launch default).
+        try:
+            if app.lower() == "notepad":
+                _safe_open_path_with("notepad.exe", str(file_path))
+            elif app.lower() == "word":
+                _safe_open_path_with("winword.exe", str(file_path))
+            elif app.lower() == "excel":
+                _safe_open_path_with("excel.exe", str(file_path))
+            else:
+                # Default association open (equivalent to `start "" "<file>"`)
+                _safe_launch_executable(str(file_path))
+        except SecurityValidationError as sec_err:
+            logger.warning(f"Blocked unsafe file open '{file_path}': {sec_err}")
+            return f"✅ File created at {filename}, but could not be opened (invalid path)."
         
         return f"✅ **File Created & Opened!**\n\n📁 File: {filename}\n💾 Size: {len(content)} characters\n🚀 Opened in: {app.title()}\n\nFile ready for editing! ✏️"
         
@@ -908,29 +902,38 @@ async def open_vscode_new_window(folder_path: str = "") -> str:
         import subprocess
         import os
         
-        # VS Code command variations to try
+        # VS Code command variations to try (program + args as LISTS, never
+        # interpolated shell strings). SECURITY: shell=False everywhere.
         vscode_commands = [
-            "code --new-window",
-            "Code.exe --new-window", 
-            "C:\\Program Files\\Microsoft VS Code\\Code.exe --new-window",
-            "C:\\Users\\%USERNAME%\\AppData\\Local\\Programs\\Microsoft VS Code\\Code.exe --new-window"
+            ["code", "--new-window"],
+            ["Code.exe", "--new-window"],
+            ["C:\\Program Files\\Microsoft VS Code\\Code.exe", "--new-window"],
+            [os.path.expandvars("C:\\Users\\%USERNAME%\\AppData\\Local\\Programs\\Microsoft VS Code\\Code.exe"), "--new-window"],
         ]
-        
-        # If folder path is provided, add it to command
-        if folder_path and os.path.exists(folder_path):
-            vscode_commands = [cmd + f' "{folder_path}"' for cmd in vscode_commands]
-        
+
+        # If a folder path is provided, validate it and append as a separate arg.
+        safe_folder = None
+        if folder_path:
+            try:
+                from alice_security import validate_path as _vp
+                safe_folder = _vp(folder_path, must_exist=True)
+            except SecurityValidationError as sec_err:
+                logger.warning(f"Ignoring unsafe VS Code folder path: {sec_err}")
+                safe_folder = None
+        if safe_folder:
+            vscode_commands = [cmd + [safe_folder] for cmd in vscode_commands]
+
         success = False
         for cmd in vscode_commands:
             try:
-                subprocess.Popen(cmd, shell=True)
+                subprocess.Popen(cmd, shell=False)
                 success = True
                 break
-            except:
+            except Exception:
                 continue
-        
+
         if success:
-            folder_info = f" with folder: {folder_path}" if folder_path else ""
+            folder_info = f" with folder: {safe_folder}" if safe_folder else ""
             return f"✅ VS Code new window opened{folder_info}! 💻\n\nReady for coding! 🚀"
         else:
             return "❌ VS Code नहीं मिला। Install करें या path check करें। 🤔"
@@ -976,40 +979,52 @@ async def open_browser(browser: str, url: str = "") -> str:
         
         browser_lower = browser.lower()
         commands = browser_commands.get(browser_lower, [browser + ".exe"])
-        
+
+        # SECURITY: validate the URL once up front. Rejects javascript:/file:/
+        # data: schemes and any shell metacharacters before it reaches a launch.
+        safe_url = ""
+        if url:
+            try:
+                from alice_security import validate_url as _vu
+                safe_url = _vu(url)
+            except SecurityValidationError as sec_err:
+                logger.warning(f"Blocked unsafe browser URL: {sec_err}")
+                return f"❌ The URL was rejected for security reasons."
+
         success = False
         used_command = ""
-        
-        # Try each command path until one works
+
+        # Try each command path until one works (all shell=False arg-lists)
         for cmd_path in commands:
             try:
-                # Check if the executable exists
                 if os.path.exists(cmd_path):
-                    if url:
-                        # Use proper command array format for subprocess with URL
-                        result = subprocess.Popen([cmd_path, url], shell=False)
+                    if safe_url:
+                        result = subprocess.Popen([cmd_path, safe_url], shell=False)
                     else:
-                        # Open browser without URL
                         result = subprocess.Popen([cmd_path], shell=False)
-                    
                     success = True
                     used_command = cmd_path
                     break
                 else:
-                    # Try as shell command if file doesn't exist at that path
-                    if url:
-                        subprocess.Popen(f'"{cmd_path}" "{url}"', shell=True)
-                    else:
-                        subprocess.Popen(f'"{cmd_path}"', shell=True)
-                    success = True
-                    used_command = cmd_path
-                    break
+                    # Path not found at this location: try launching the browser
+                    # by bare name via the safe layer (shell-free association),
+                    # then hand off the URL to the default handler if needed.
+                    try:
+                        _safe_launch_app(browser_lower, app_database=APP_DATABASE)
+                        if safe_url:
+                            _safe_open_url(safe_url)
+                        success = True
+                        used_command = cmd_path
+                        break
+                    except Exception as e:
+                        logger.debug(f"Safe launch of {browser_lower} failed: {e}")
+                        continue
             except Exception as e:
                 logger.debug(f"Failed to open {cmd_path}: {e}")
                 continue
-        
+
         if success:
-            url_info = f" with URL: {url}" if url else ""
+            url_info = f" with URL: {safe_url}" if safe_url else ""
             return f"✅ {browser.title()} opened{url_info}! 🌐\n\nBrowsing ready! 📱\n\nUsed: {used_command}"
         else:
             return f"❌ {browser.title()} browser नहीं मिला। Install check करें। 🤔\n\nTried paths: {', '.join(commands[:2])}"
@@ -1069,7 +1084,7 @@ $bmp.Dispose()
         else:
             # Fallback: Use Windows Snipping Tool
             import subprocess
-            subprocess.Popen("snippingtool.exe", shell=True)
+            subprocess.Popen(["snippingtool.exe"], shell=False)
             return "✅ Snipping Tool opened for manual screenshot! ✂️\n\nCapture your screenshot manually. 📷"
             
     except Exception as e:
@@ -1077,7 +1092,7 @@ $bmp.Dispose()
         # Another fallback: Print Screen key simulation
         try:
             import subprocess
-            subprocess.Popen("snippingtool.exe", shell=True)
+            subprocess.Popen(["snippingtool.exe"], shell=False)
             return f"⚠️ Auto-screenshot failed, but Snipping Tool opened!\n\nError: {str(e)}\nUse Snipping Tool manually. ✂️"
         except:
             return f"❌ Screenshot capture में error: {str(e)} 😔"
@@ -1130,20 +1145,20 @@ async def adjust_brightness(action: str, value: int = 10) -> str:
             else:
                 # Fallback: Open Windows Settings
                 import subprocess
-                subprocess.Popen("ms-settings:display", shell=True)
+                _safe_launch_protocol("ms-settings:display")
                 return f"⚠️ Direct brightness control failed.\n\nDisplay settings opened - adjust manually! ⚙️"
                 
         except subprocess.TimeoutExpired:
             # Fallback: Use Windows key shortcuts simulation or settings
             import subprocess
-            subprocess.Popen("ms-settings:display", shell=True)
+            _safe_launch_protocol("ms-settings:display")
             return f"⚠️ Brightness command timeout.\n\nDisplay settings opened for manual adjustment! ⚙️"
             
     except Exception as e:
         logger.error(f"Error adjusting brightness: {e}")
         try:
             import subprocess
-            subprocess.Popen("ms-settings:display", shell=True)
+            _safe_launch_protocol("ms-settings:display")
             return f"❌ Brightness adjustment में error: {str(e)}\n\nDisplay settings opened as fallback! ⚙️"
         except:
             return f"❌ Brightness control error: {str(e)} 😔"
@@ -1159,71 +1174,67 @@ async def search_files_system(query: str, location: str = "", file_type: str = "
         return "🔐 Personal mode enable करें पहले!"
     
     try:
-        import subprocess
         import os
-        
+
         # Default search location
         if not location:
             location = "C:\\"
-        
-        # Build search command based on parameters
+
+        # SECURITY: search is performed in pure Python (os.walk) via the safe
+        # layer — NOT a `dir "<loc>" /s /b | findstr "<query>"` shell pipeline.
+        # This structurally eliminates the command injection that existed here.
         if file_type:
-            # Search by file extension
-            search_pattern = f"*.{file_type.replace('.', '')}"
-            cmd = f'dir "{location}" /s /b | findstr /i "{search_pattern}"'
+            search_term = f".{file_type.replace('.', '')}"  # e.g. ".pdf"
         else:
-            # Search by filename/query
-            cmd = f'dir "{location}" /s /b | findstr /i "{query}"'
-        
-        # Execute search
+            search_term = query
+
         try:
-            result = subprocess.run(
-                cmd,
-                shell=True,
-                capture_output=True,
-                text=True,
-                timeout=30
-            )
-            
-            if result.stdout:
-                files = result.stdout.strip().split('\n')
+            matches = _safe_search_files(search_term, location, max_results=500)
+        except SecurityValidationError as sec_err:
+            logger.warning(f"Blocked unsafe file search: {sec_err}")
+            return f"❌ Search input was rejected for security reasons."
+
+        try:
+            if matches:
+                files = matches
                 # Limit results to first 15 to avoid overwhelming
                 limited_files = files[:15]
-                
+
                 search_results = f"🔍 **Search Results for '{query}':**\n\n"
                 search_results += f"📍 Location: {location}\n"
                 search_results += f"📁 Found: {len(files)} files\n\n"
-                
+
                 if file_type:
                     search_results += f"🎯 File type: .{file_type}\n\n"
-                
+
                 search_results += "📄 **Files Found:**\n"
                 for i, file_path in enumerate(limited_files, 1):
                     filename = os.path.basename(file_path)
                     search_results += f"{i}. {filename}\n   📂 {file_path}\n"
-                
+
                 if len(files) > 15:
                     search_results += f"\n... और {len(files) - 15} files मिली।"
-                
+
                 search_results += f"\n\n💡 Koi specific file open करनी है? File path बताएं!"
                 return search_results
-                
+
             else:
-                # Fallback: Open Windows File Explorer search
-                import subprocess
-                subprocess.Popen(f'explorer.exe /root,"{location}"', shell=True)
+                # Fallback: open Windows File Explorer at the location (shell-free)
+                try:
+                    _safe_open_path_with("explorer.exe", location)
+                except Exception:
+                    pass
                 return f"❌ '{query}' files नहीं मिलीं।\n\nFile Explorer opened at {location}\nManual search करें! 📂"
-                
-        except subprocess.TimeoutExpired:
-            import subprocess
-            subprocess.Popen(f'explorer.exe', shell=True)
-            return "⚠️ Search timeout - File Explorer opened for manual search! 📂"
+
+        except Exception as inner_e:
+            logger.error(f"Error formatting search results: {inner_e}")
+            return f"❌ File search में error: {str(inner_e)}"
             
     except Exception as e:
         logger.error(f"Error searching files: {e}")
         try:
             import subprocess
-            subprocess.Popen("explorer.exe", shell=True)
+            subprocess.Popen(["explorer.exe"], shell=False)
             return f"❌ File search में error: {str(e)}\n\nFile Explorer opened as fallback! 📂"
         except:
             return f"❌ File search error: {str(e)} 😔"

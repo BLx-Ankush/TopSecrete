@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { AccessToken, type AccessTokenOptions, type VideoGrant } from 'livekit-server-sdk';
 import { RoomConfiguration } from '@livekit/protocol';
+import { randomUUID } from 'node:crypto';
 
 // NOTE: you are expected to define the following environment variables in `.env.local`:
 const API_KEY = process.env.LIVEKIT_API_KEY;
@@ -9,6 +10,31 @@ const LIVEKIT_URL = process.env.LIVEKIT_URL;
 
 // don't cache the results
 export const revalidate = 0;
+
+// ── Lightweight in-memory rate limiting ──────────────────────────────────────
+// Token minting is unauthenticated, so throttle per client IP to prevent abuse
+// (token flooding / resource exhaustion). Suitable for a single-instance
+// deployment; use a shared store (Redis) if you scale horizontally.
+const RATE_LIMIT_WINDOW_MS = 60_000;
+const RATE_LIMIT_MAX = 30; // max token requests per IP per window
+const rateBuckets = new Map<string, { count: number; resetAt: number }>();
+
+function isRateLimited(ip: string): boolean {
+  const now = Date.now();
+  const bucket = rateBuckets.get(ip);
+  if (!bucket || now > bucket.resetAt) {
+    rateBuckets.set(ip, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
+    return false;
+  }
+  bucket.count += 1;
+  // Opportunistic cleanup to bound memory.
+  if (rateBuckets.size > 10_000) {
+    Array.from(rateBuckets.entries()).forEach(([k, v]) => {
+      if (now > v.resetAt) rateBuckets.delete(k);
+    });
+  }
+  return bucket.count > RATE_LIMIT_MAX;
+}
 
 export type ConnectionDetails = {
   serverUrl: string;
@@ -19,6 +45,18 @@ export type ConnectionDetails = {
 
 export async function POST(req: Request) {
   try {
+    // Rate limit by client IP before doing any work.
+    const ip =
+      req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
+      req.headers.get('x-real-ip') ||
+      'unknown';
+    if (isRateLimited(ip)) {
+      return NextResponse.json(
+        { error: 'Too many requests. Please slow down and try again shortly.' },
+        { status: 429 }
+      );
+    }
+
     // Validate LiveKit configuration
     if (!LIVEKIT_URL || LIVEKIT_URL === 'wss://your-project.livekit.cloud') {
       console.error('LiveKit URL not configured');
@@ -50,10 +88,12 @@ export async function POST(req: Request) {
     
     const agentName: string = body?.room_config?.agents?.[0]?.agent_name;
 
-    // Generate participant token
+    // Generate participant token.
+    // SECURITY (CWE-338): use cryptographically-strong identifiers instead of
+    // Math.random(), which is predictable and collision-prone.
     const participantName = 'user';
-    const participantIdentity = `voice_assistant_user_${Math.floor(Math.random() * 10_000)}`;
-    const roomName = `voice_assistant_room_${Math.floor(Math.random() * 10_000)}`;
+    const participantIdentity = `voice_assistant_user_${randomUUID()}`;
+    const roomName = `voice_assistant_room_${randomUUID()}`;
 
     let participantToken: string;
     try {
