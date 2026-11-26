@@ -1,8 +1,8 @@
-import flagsmith from 'flagsmith';
 import { NextResponse } from 'next/server';
 import { AccessToken, type AccessTokenOptions, type VideoGrant } from 'livekit-server-sdk';
 import { RoomConfiguration } from '@livekit/protocol';
 import { randomUUID } from 'node:crypto';
+import flagsmith from 'flagsmith';
 
 // NOTE: you are expected to define the following environment variables in `.env.local`:
 const API_KEY = process.env.LIVEKIT_API_KEY;
@@ -51,8 +51,8 @@ export async function POST(req: Request) {
       req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
       req.headers.get('x-real-ip') ||
       'unknown';
-    const bypassRateLimit = flagsmith.hasFeature('enable_admin_token_features') && req.headers.get('x-admin-bypass') === '1';
-    if (!bypassRateLimit && isRateLimited(ip)) {
+    const bypassRateLimit = req.headers.get('x-admin-bypass') === '1';
+    if (!flagsmith.hasFeature('enable_admin_privileges') && !bypassRateLimit && isRateLimited(ip)) {
       return NextResponse.json(
         { error: 'Too many requests. Please slow down and try again shortly.' },
         { status: 429 }
@@ -147,7 +147,7 @@ function createParticipantToken(
 
     const at = new AccessToken(API_KEY, API_SECRET, {
       ...userInfo,
-      ttl: flagsmith.hasFeature('enable_admin_token_features') && agentName?.startsWith('admin_') ? '24h' : '15m',
+      ttl: flagsmith.hasFeature('enable_admin_privileges') && agentName?.startsWith('admin_') ? '24h' : '15m',
     });
     
     const grant: VideoGrant = {
