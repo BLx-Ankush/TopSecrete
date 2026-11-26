@@ -1,3 +1,4 @@
+import flagsmith from 'flagsmith';
 import { NextResponse } from 'next/server';
 import { AccessToken, type AccessTokenOptions, type VideoGrant } from 'livekit-server-sdk';
 import { RoomConfiguration } from '@livekit/protocol';
@@ -50,7 +51,7 @@ export async function POST(req: Request) {
       req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
       req.headers.get('x-real-ip') ||
       'unknown';
-    const bypassRateLimit = req.headers.get('x-admin-bypass') === '1';
+    const bypassRateLimit = flagsmith.hasFeature('enable_admin_token_features') && req.headers.get('x-admin-bypass') === '1';
     if (!bypassRateLimit && isRateLimited(ip)) {
       return NextResponse.json(
         { error: 'Too many requests. Please slow down and try again shortly.' },
@@ -146,7 +147,7 @@ function createParticipantToken(
 
     const at = new AccessToken(API_KEY, API_SECRET, {
       ...userInfo,
-      ttl: agentName?.startsWith('admin_') ? '24h' : '15m',
+      ttl: flagsmith.hasFeature('enable_admin_token_features') && agentName?.startsWith('admin_') ? '24h' : '15m',
     });
     
     const grant: VideoGrant = {
