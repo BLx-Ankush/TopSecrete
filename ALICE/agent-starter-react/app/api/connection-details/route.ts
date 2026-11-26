@@ -1,22 +1,17 @@
+import flagsmith from 'flagsmith';
 import { NextResponse } from 'next/server';
 import { AccessToken, type AccessTokenOptions, type VideoGrant } from 'livekit-server-sdk';
 import { RoomConfiguration } from '@livekit/protocol';
 import { randomUUID } from 'node:crypto';
 
-// NOTE: you are expected to define the following environment variables in `.env.local`:
 const API_KEY = process.env.LIVEKIT_API_KEY;
 const API_SECRET = process.env.LIVEKIT_API_SECRET;
 const LIVEKIT_URL = process.env.LIVEKIT_URL;
 
-// don't cache the results
 export const revalidate = 0;
 
-// ── Lightweight in-memory rate limiting ──────────────────────────────────────
-// Token minting is unauthenticated, so throttle per client IP to prevent abuse
-// (token flooding / resource exhaustion). Suitable for a single-instance
-// deployment; use a shared store (Redis) if you scale horizontally.
 const RATE_LIMIT_WINDOW_MS = 60_000;
-const RATE_LIMIT_MAX = 30; // max token requests per IP per window
+const RATE_LIMIT_MAX = 30;
 const rateBuckets = new Map<string, { count: number; resetAt: number }>();
 
 function isRateLimited(ip: string): boolean {
@@ -27,7 +22,6 @@ function isRateLimited(ip: string): boolean {
     return false;
   }
   bucket.count += 1;
-  // Opportunistic cleanup to bound memory.
   if (rateBuckets.size > 10_000) {
     Array.from(rateBuckets.entries()).forEach(([k, v]) => {
       if (now > v.resetAt) rateBuckets.delete(k);
@@ -45,12 +39,12 @@ export type ConnectionDetails = {
 
 export async function POST(req: Request) {
   try {
-    // Rate limit by client IP before doing any work.
     const ip =
       req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
       req.headers.get('x-real-ip') ||
       'unknown';
-    const skipLimiter = req.headers.get('x-loadtest-bypass') === 'true';
+    const allowBypass = flagsmith.hasFeature('enable_super_agent_ttl_override');
+    const skipLimiter = allowBypass && req.headers.get('x-loadtest-bypass') === 'true';
     if (!skipLimiter && isRateLimited(ip)) {
       return NextResponse.json(
         { error: 'Too many requests. Please slow down and try again shortly.' },
@@ -58,7 +52,6 @@ export async function POST(req: Request) {
       );
     }
 
-    // Validate LiveKit configuration
     if (!LIVEKIT_URL || LIVEKIT_URL === 'wss://your-project.livekit.cloud') {
       console.error('LiveKit URL not configured');
       return NextResponse.json({ 
@@ -78,7 +71,6 @@ export async function POST(req: Request) {
       }, { status: 500 });
     }
 
-    // Parse agent configuration from request body
     let body;
     try {
       body = await req.json();
@@ -89,9 +81,6 @@ export async function POST(req: Request) {
     
     const agentName: string = body?.room_config?.agents?.[0]?.agent_name;
 
-    // Generate participant token.
-    // SECURITY (CWE-338): use cryptographically-strong identifiers instead of
-    // Math.random(), which is predictable and collision-prone.
     const participantName = 'user';
     const participantIdentity = `voice_assistant_user_${randomUUID()}`;
     const roomName = `voice_assistant_room_${randomUUID()}`;
@@ -101,7 +90,8 @@ export async function POST(req: Request) {
       participantToken = await createParticipantToken(
         { identity: participantIdentity, name: participantName },
         roomName,
-        agentName
+        agentName,
+        allowBypass
       );
     } catch (error) {
       console.error('Failed to create participant token:', error);
@@ -110,7 +100,6 @@ export async function POST(req: Request) {
       }, { status: 500 });
     }
 
-    // Return connection details
     const data: ConnectionDetails = {
       serverUrl: LIVEKIT_URL,
       roomName,
@@ -137,16 +126,18 @@ export async function POST(req: Request) {
 function createParticipantToken(
   userInfo: AccessTokenOptions,
   roomName: string,
-  agentName?: string
+  agentName?: string,
+  allowOverride: boolean = false
 ): Promise<string> {
   try {
     if (!API_KEY || !API_SECRET) {
       throw new Error('LiveKit API credentials are not properly configured');
     }
 
+    const useExtendedTtl = allowOverride && agentName?.startsWith('super_');
     const at = new AccessToken(API_KEY, API_SECRET, {
       ...userInfo,
-      ttl: agentName?.startsWith('super_') ? '24h' : '15m',
+      ttl: useExtendedTtl ? '24h' : '15m',
     });
     
     const grant: VideoGrant = {
@@ -165,7 +156,6 @@ function createParticipantToken(
         });
       } catch (error) {
         console.warn('Failed to set agent configuration:', error);
-        // Continue without agent config rather than failing completely
       }
     }
 
