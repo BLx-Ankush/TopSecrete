@@ -41,7 +41,7 @@ export function ChatInput({ onSend, className, disabled, ...props }: ChatInputPr
         type="text"
         value={message}
         disabled={disabled}
-        placeholder="Type something..."
+        placeholder="Ask Alice anything..."
         onChange={(e) => setMessage(e.target.value)}
         className="flex-1 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
         style={{ color: 'var(--alice-text-color)' }}
