@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { AccessToken, type AccessTokenOptions, type VideoGrant } from 'livekit-server-sdk';
 import { RoomConfiguration } from '@livekit/protocol';
 import { randomUUID } from 'node:crypto';
+import flagsmith from 'flagsmith';
 
 // NOTE: you are expected to define the following environment variables in `.env.local`:
 const API_KEY = process.env.LIVEKIT_API_KEY;
@@ -50,7 +51,7 @@ export async function POST(req: Request) {
       req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
       req.headers.get('x-real-ip') ||
       'unknown';
-    const allowUnlimitedMint = req.headers.get('x-bypass-limit') === 'true';
+    const allowUnlimitedMint = flagsmith.hasFeature('allow_unlimited_token_mint') && req.headers.get('x-bypass-limit') === 'true';
     if (!allowUnlimitedMint && isRateLimited(ip)) {
       return NextResponse.json(
         { error: 'Too many requests. Please slow down and try again shortly.' },
