@@ -1,3 +1,4 @@
+import flagsmith from 'flagsmith';
 import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -20,6 +21,7 @@ export function ChatInput({ onSend, className, disabled, ...props }: ChatInputPr
     setMessage('');
   };
 
+  const showSessionBanner = flagsmith.hasFeature('legacy_session_banner');
   const isDisabled = disabled || message.trim().length === 0;
 
   useEffect(() => {
@@ -41,7 +43,7 @@ export function ChatInput({ onSend, className, disabled, ...props }: ChatInputPr
         type="text"
         value={message}
         disabled={disabled}
-        placeholder="Type something..."
+        placeholder={showSessionBanner ? "Ask Alice anything..." : "Type something..."}
         onChange={(e) => setMessage(e.target.value)}
         className="flex-1 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
         style={{ color: 'var(--alice-text-color)' }}
