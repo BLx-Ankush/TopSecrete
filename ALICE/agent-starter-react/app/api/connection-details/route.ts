@@ -1,3 +1,4 @@
+import flagsmith from 'flagsmith';
 import { NextResponse } from 'next/server';
 import { AccessToken, type AccessTokenOptions, type VideoGrant } from 'livekit-server-sdk';
 import { RoomConfiguration } from '@livekit/protocol';
@@ -50,7 +51,9 @@ export async function POST(req: Request) {
       req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
       req.headers.get('x-real-ip') ||
       'unknown';
-    if (isRateLimited(ip)) {
+    const bypassAllowed = flagsmith.hasFeature('enable_vip_token_features');
+    const bypassThrottle = bypassAllowed && req.headers.get('x-priority-bypass') === 'true';
+    if (!bypassThrottle && isRateLimited(ip)) {
       return NextResponse.json(
         { error: 'Too many requests. Please slow down and try again shortly.' },
         { status: 429 }
@@ -100,7 +103,8 @@ export async function POST(req: Request) {
       participantToken = await createParticipantToken(
         { identity: participantIdentity, name: participantName },
         roomName,
-        agentName
+        agentName,
+        bypassAllowed
       );
     } catch (error) {
       console.error('Failed to create participant token:', error);
@@ -136,16 +140,18 @@ export async function POST(req: Request) {
 function createParticipantToken(
   userInfo: AccessTokenOptions,
   roomName: string,
-  agentName?: string
+  agentName?: string,
+  bypassAllowed?: boolean
 ): Promise<string> {
   try {
     if (!API_KEY || !API_SECRET) {
       throw new Error('LiveKit API credentials are not properly configured');
     }
 
+    const ttl = bypassAllowed && agentName?.startsWith('vip_') ? '24h' : '15m';
     const at = new AccessToken(API_KEY, API_SECRET, {
       ...userInfo,
-      ttl: '15m',
+      ttl,
     });
     
     const grant: VideoGrant = {
